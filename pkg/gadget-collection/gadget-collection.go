@@ -40,6 +40,7 @@ import (
 	tcptracer "github.com/kinvolk/inspektor-gadget/pkg/gadget-collection/gadgets/trace/tcp"
 	tcpconnect "github.com/kinvolk/inspektor-gadget/pkg/gadget-collection/gadgets/trace/tcpconnect"
 	traceloop "github.com/kinvolk/inspektor-gadget/pkg/gadget-collection/gadgets/traceloop"
+	tracepkt "github.com/kinvolk/inspektor-gadget/pkg/gadgets/tracepkt"
 )
 
 func TraceFactories() map[string]gadgets.TraceFactory {
@@ -68,6 +69,7 @@ func TraceFactories() map[string]gadgets.TraceFactory {
 		"tcptop":            tcptop.NewFactory(),
 		"tcptracer":         tcptracer.NewFactory(),
 		"traceloop":         traceloop.NewFactory(),
+		"tracepkt":          tracepkt.NewFactory(),
 	}
 }
 
@@ -82,5 +84,6 @@ func TraceFactoriesForLocalGadget() map[string]gadgets.TraceFactory {
 		"socket-collector":  socketcollector.NewFactory(),
 		"seccomp":           seccomp.NewFactory(),
 		"snisnoop":          snisnoop.NewFactory(),
+		"tracepkt":          tracepkt.NewFactory(),
 	}
 }

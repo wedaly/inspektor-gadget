@@ -43,6 +43,8 @@ require (
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/coreos/go-iptables v0.5.0
+	github.com/fatih/color v1.12.0
 	github.com/google/go-cmp v0.5.8
 	github.com/moby/moby v20.10.17+incompatible
 )
@@ -97,6 +99,8 @@ require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
