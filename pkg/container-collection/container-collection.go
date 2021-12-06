@@ -22,8 +22,11 @@
 package containercollection
 
 import (
+	"os"
 	"sync"
 
+	pb "github.com/kinvolk/inspektor-gadget/pkg/gadgettracermanager/api"
+	"github.com/kinvolk/inspektor-gadget/pkg/gadgettracermanager/containerutils"
 	eventtypes "github.com/kinvolk/inspektor-gadget/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -55,11 +58,8 @@ type ContainerCollection struct {
 	// initialized tells if Initialize() has been called.
 	initialized bool
 
-	// closed tells if Close() has been called.
-	closed bool
-
-	// functions to be called on Close()
-	cleanUpFuncs []func()
+	// network namespace on the host
+	netnsHost uint64
 }
 
 // ContainerCollectionOption are options to pass to
@@ -73,6 +73,8 @@ func (cc *ContainerCollection) Initialize(options ...ContainerCollectionOption) 
 	if cc.initialized {
 		panic("Initialize already called")
 	}
+
+	cc.netnsHost, _ = containerutils.GetNetNs(os.Getpid())
 
 	// Call functional options. This might fetch initial containers.
 	for _, o := range options {
@@ -194,6 +196,31 @@ func (cc *ContainerCollection) LookupMntnsByPod(namespace, pod string) map[strin
 		return true
 	})
 	return ret
+}
+
+// LookupPodByNetns TODO
+func (cc *ContainerCollection) LookupPodByNetns(netns uint64) (found, host bool, namespace, pod string) {
+	if netns == 0 {
+		return false, false, "", ""
+	}
+
+	if netns == cc.netnsHost {
+		return true, true, "", ""
+	}
+
+	cc.containers.Range(func(key, value interface{}) bool {
+		c := value.(*pb.ContainerDefinition)
+		if netns == c.Netns {
+			found = true
+			host = false
+			namespace = c.Namespace
+			pod = c.Podname
+			// container found, stop iterating
+			return false
+		}
+		return true
+	})
+	return
 }
 
 // LookupPIDByContainer returns the PID of the container

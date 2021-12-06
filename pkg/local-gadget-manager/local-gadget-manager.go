@@ -350,7 +350,14 @@ func NewManager(runtimes []*containerutils.RuntimeConfig) (*LocalGadgetManager, 
 		containercollection.WithPubSub(containerEventFuncs...),
 		containercollection.WithCgroupEnrichment(),
 		containercollection.WithLinuxNamespaceEnrichment(),
+<<<<<<< HEAD
 		containercollection.WithMultipleContainerRuntimesEnrichment(runtimes),
+||||||| parent of b018f06 (ContainerCollection: add LookupPodByNetns and VethPeerName)
+		containercollection.WithDockerEnrichment(),
+=======
+		containercollection.WithVethEnrichment(),
+		containercollection.WithDockerEnrichment(),
+>>>>>>> b018f06 (ContainerCollection: add LookupPodByNetns and VethPeerName)
 		containercollection.WithRuncFanotify(),
 	)
 	if err != nil {

@@ -256,6 +256,7 @@ func NewServer(conf *Conf) (*GadgetTracerManager, error) {
 		opts = append(opts, containercollection.WithCgroupEnrichment())
 		opts = append(opts, containercollection.WithLinuxNamespaceEnrichment())
 		opts = append(opts, containercollection.WithKubernetesEnrichment(g.nodeName, nil))
+		opts = append(opts, containercollection.WithVethEnrichment())
 	}
 
 	podInformerUsed := false
