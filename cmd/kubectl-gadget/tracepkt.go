@@ -23,8 +23,10 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
+	commonutils "github.com/kinvolk/inspektor-gadget/cmd/common/utils"
 	"github.com/kinvolk/inspektor-gadget/cmd/kubectl-gadget/utils"
 	tracepkttypes "github.com/kinvolk/inspektor-gadget/pkg/gadgets/tracepkt/types"
+	eventtypes "github.com/kinvolk/inspektor-gadget/pkg/types"
 )
 
 const (
@@ -45,11 +47,13 @@ var tracepktCmd = &cobra.Command{
 		transform := tracepktTransformLine()
 
 		switch {
-		case params.OutputMode == utils.OutputModeJson: // don't print any header
-		case params.OutputMode == utils.OutputModeCustomColumns:
-			table := utils.NewTableFormater(params.CustomColumns, tracepktColLens)
-			fmt.Println(table.GetHeader())
-			transform = table.GetTransformFunc()
+		case params.OutputMode == commonutils.OutputModeJSON: // don't print any header
+		case params.OutputMode == commonutils.OutputModeCustomColumns:
+			/*
+				table := commonutils.NewTableFormatter(params.CustomColumns, tracepktColLens)
+				fmt.Println(table.GetHeader())
+				transform = table.GetTransformFunc()
+			*/
 		case params.Verbose:
 			fmt.Printf(TRACEPKT_FMT_ALL+"\n",
 				"NODE",
@@ -153,14 +157,13 @@ func tracepktTransformLine() func(line string) string {
 			podMsgSuffix = ", pod " + event.Namespace + "/" + event.Pod
 		}
 
-		if event.Err != "" {
-			return fmt.Sprintf("Error on node %s%s: %s: %s", event.Node, podMsgSuffix, event.Notice, event.Err)
-		}
-		if event.Notice != "" {
+		if event.Type == eventtypes.ERR && event.Message != "" {
+			return fmt.Sprintf("Error on node %s%s: %s", event.Node, podMsgSuffix, event.Message)
+		} else if event.Message != "" {
 			if !params.Verbose {
 				return ""
 			}
-			return fmt.Sprintf("Notice on node %s%s: %s", event.Node, podMsgSuffix, event.Notice)
+			return fmt.Sprintf("Notice on node %s%s: %s", event.Node, podMsgSuffix, event.Message)
 		}
 
 		switch event.Comment {
