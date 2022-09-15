@@ -21,7 +21,7 @@ struct {
   #if defined(bpf_target_x86)
     #define PT_REGS_PARM6(x) ((x)->r9)
   #elif defined(bpf_target_arm64)
-    #define PT_REGS_PARM5(x) (((PT_REGS_ARM64 *)(x))->regs[5])
+    #define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
   #else
     #error "Please define PT_REGS_PARM6 for your architecture"
   #endif
