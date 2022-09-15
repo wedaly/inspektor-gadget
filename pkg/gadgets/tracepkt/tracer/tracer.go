@@ -35,6 +35,8 @@ import (
 // #include "bpf/tracepkt.h"
 import "C"
 
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -no-global-types -target bpfel -cc clang tracepkt ./bpf/tracepkt.c -- -I./bpf/ -I../../../${TARGET}
+
 const (
 	BPF_PROG_NAME = "kprobe_nf_log_trace"
 	BPF_MAP_NAME  = "events"
