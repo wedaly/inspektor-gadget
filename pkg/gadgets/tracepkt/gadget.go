@@ -23,13 +23,13 @@ import (
 	"github.com/vishvananda/netns"
 
 	gadgetv1alpha1 "github.com/kinvolk/inspektor-gadget/pkg/apis/gadget/v1alpha1"
-	"github.com/kinvolk/inspektor-gadget/pkg/gadgets"
+	"github.com/kinvolk/inspektor-gadget/pkg/gadget-collection/gadgets"
 	tracepkttracer "github.com/kinvolk/inspektor-gadget/pkg/gadgets/tracepkt/tracer"
 	tracepkttypes "github.com/kinvolk/inspektor-gadget/pkg/gadgets/tracepkt/types"
 )
 
 type Trace struct {
-	resolver  gadgets.Resolver
+	helpers  gadgets.GadgetHelpers
 	traceName string
 	tracer    *tracepkttracer.Tracer
 	started   bool
@@ -63,20 +63,21 @@ func deleteTrace(name string, t interface{}) {
 	}
 }
 
-func (f *TraceFactory) Operations() map[string]gadgets.TraceOperation {
+func (f *TraceFactory) Operations() map[gadgetv1alpha1.Operation]gadgets.TraceOperation {
 	n := func() interface{} {
 		return &Trace{
-			resolver: f.Resolver,
+			helpers: f.Helpers,
 		}
 	}
-	return map[string]gadgets.TraceOperation{
-		"start": {
+	return map[gadgetv1alpha1.Operation]gadgets.TraceOperation{
+		gadgetv1alpha1.OperationStart: {
 			Doc: "Start monitoring packets",
 			Operation: func(name string, trace *gadgetv1alpha1.Trace) {
 				f.LookupOrCreate(name, n).(*Trace).Start(trace)
 			},
 			Order: 1,
 		},
+		// TODO: make these keys operations consts too?
 		"add-trace": {
 			Doc: "Add a TRACE rule",
 			Operation: func(name string, trace *gadgetv1alpha1.Trace) {
@@ -91,7 +92,7 @@ func (f *TraceFactory) Operations() map[string]gadgets.TraceOperation {
 			},
 			Order: 2,
 		},
-		"stop": {
+		gadgetv1alpha1.OperationStop: {
 			Doc: "Stop monitoring packets",
 			Operation: func(name string, trace *gadgetv1alpha1.Trace) {
 				f.LookupOrCreate(name, n).(*Trace).Stop(trace)
@@ -131,7 +132,7 @@ func (t *Trace) eventCallback(event *tracepkttypes.Event) {
 	if netnsId == 0 {
 		netnsId = event.NetnsOut
 	}
-	_, host, namespace, podname := t.resolver.LookupPodByNetns(netnsId)
+	_, host, namespace, podname := t.helpers.LookupPodByNetns(netnsId)
 	event.Host = host
 	event.Namespace = namespace
 	event.Pod = podname
@@ -139,7 +140,7 @@ func (t *Trace) eventCallback(event *tracepkttypes.Event) {
 	if host {
 		t.tracer.EnrichEvent(event)
 	} else {
-		pids := t.resolver.LookupPIDByPod(namespace, podname)
+		pids := t.helpers.LookupPIDByPod(namespace, podname)
 		pid := 0
 		for _, p := range pids {
 			pid = int(p)
@@ -160,7 +161,7 @@ func (t *Trace) eventCallback(event *tracepkttypes.Event) {
 	}
 	eventStr = string(b)
 
-	t.resolver.PublishEvent(
+	t.helpers.PublishEvent(
 		t.traceName,
 		eventStr,
 	)
@@ -235,7 +236,7 @@ func iptablesCommentFromTrace(trace *gadgetv1alpha1.Trace) string {
 
 func (t *Trace) addTrace(trace *gadgetv1alpha1.Trace) {
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
-	filteredContainers := t.resolver.GetContainersBySelector(selector)
+	filteredContainers := t.helpers.GetContainersBySelector(selector)
 	pidsByLink := map[string]uint32{}
 	for _, c := range filteredContainers {
 		if c.VethPeerName != "" {
