@@ -49,9 +49,9 @@ func (f *TraceFactory) Description() string {
 	return `The tracepkt gadget`
 }
 
-func (f *TraceFactory) OutputModesSupported() map[string]struct{} {
-	return map[string]struct{}{
-		"Stream": {},
+func (f *TraceFactory) OutputModesSupported() map[gadgetv1alpha1.TraceOutputMode]struct{} {
+	return map[gadgetv1alpha1.TraceOutputMode]struct{}{
+		gadgetv1alpha1.TraceOutputModeStream: {},
 	}
 }
 
