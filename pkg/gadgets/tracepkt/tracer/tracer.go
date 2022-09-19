@@ -17,6 +17,7 @@ package tracer
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
