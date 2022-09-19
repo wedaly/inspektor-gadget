@@ -132,7 +132,7 @@ func (t *Trace) eventCallback(event *tracepkttypes.Event) {
 	if netnsId == 0 {
 		netnsId = event.NetnsOut
 	}
-	_, _, namespace, podname := t.helpers.LookupPodByNetns(netnsId)
+	_, host, namespace, podname := t.helpers.LookupPodByNetns(netnsId)
 	event.Namespace = namespace
 	event.Pod = podname
 
