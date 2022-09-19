@@ -57,7 +57,7 @@ type Tracer struct {
 }
 
 func NewTracer(nodeName string, f func(event *tracepkttypes.Event)) (*Tracer, error) {
-	spec, err := ebpf.LoadCollectionSpecFromReader(bytes.NewReader(ebpfProg))
+	spec, err := loadTracepkt()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load asset: %s", err)
 	}
