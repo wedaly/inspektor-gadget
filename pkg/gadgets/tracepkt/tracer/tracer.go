@@ -90,7 +90,7 @@ func NewTracer(nodeName string, f func(event *tracepkttypes.Event)) (*Tracer, er
 		return nil, fmt.Errorf("failed to find BPF program %q", BPF_PROG_NAME)
 	}
 
-	t.progLink, err = link.Kprobe("nf_log_trace", kpProg)
+	t.progLink, err = link.Kprobe("nf_log_trace", kpProg, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open kprobe: %s", err)
 	}
