@@ -132,7 +132,9 @@ func (t *Tracer) parseEvent(rawSample []byte) *tracepkttypes.Event {
 
 	event := &tracepkttypes.Event{
 		Event: eventtypes.Event{
-			Node: t.nodeName,
+			CommonData: eventtypes.CommonData{
+				Node: t.nodeName,
+			},
 		},
 		InterfaceNameIn:   ifnameIn,
 		InterfaceNameOut:  ifnameOut,
