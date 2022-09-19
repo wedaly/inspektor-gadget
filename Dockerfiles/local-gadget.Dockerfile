@@ -30,5 +30,6 @@ RUN \
 	fi ; \
 	go build \
 		-ldflags "-X main.version=${VERSION} -extldflags '-static'" \
+		-gcflags "all=-N -l" \
 		-o local-gadget-${GOOS}-${GOARCH} \
 		github.com/kinvolk/inspektor-gadget/cmd/local-gadget
