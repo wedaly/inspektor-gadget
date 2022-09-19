@@ -167,7 +167,7 @@ func (t *Tracer) listen(rd *perf.Reader, f func(event *tracepkttypes.Event)) {
 	for {
 		record, err := rd.Read()
 		if err != nil {
-			if perf.IsClosed(err) {
+			if errors.Is(err, perf.ErrClosed) {
 				return
 			}
 			log.Errorf("Error while reading from perf event reader: %s", err)
