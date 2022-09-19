@@ -25,8 +25,8 @@ import (
 	"os"
 	"sync"
 
+	containerutils "github.com/kinvolk/inspektor-gadget/pkg/container-utils"
 	pb "github.com/kinvolk/inspektor-gadget/pkg/gadgettracermanager/api"
-	"github.com/kinvolk/inspektor-gadget/pkg/gadgettracermanager/containerutils"
 	eventtypes "github.com/kinvolk/inspektor-gadget/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
