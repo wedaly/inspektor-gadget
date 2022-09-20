@@ -334,6 +334,8 @@ func (n *RuncNotifier) watchContainersTerminationFallback() {
 }
 
 func (n *RuncNotifier) watchPidFileIterate(pidFileDirNotify *fanotify.NotifyFD, bundleDir string, pidFile string, pidFileDir string) (bool, error) {
+	log.Infof("starting pidFileDirNotify.GetEvent()\n")
+
 	// Get the next event from fanotify.
 	// Even though the API allows to pass skipPIDs, we cannot use
 	// it here because ResponseAllow would not be called.
@@ -341,6 +343,8 @@ func (n *RuncNotifier) watchPidFileIterate(pidFileDirNotify *fanotify.NotifyFD, 
 	if err != nil {
 		return false, fmt.Errorf("%w", err)
 	}
+
+	log.Infof("pidFileDirNotify.GetEvent() returned %v\n", data)
 
 	// data can be nil if the event received is from a process in skipPIDs.
 	// In that case, skip and get the next event.
