@@ -71,6 +71,7 @@ type runcContainer struct {
 
 type RuncNotifier struct {
 	runcBinaryNotify *fanotify.NotifyFD
+	pidFileDirNotify *fanotify.NotifyFD
 	callback         RuncNotifyFunc
 
 	// containers is the set of containers that are being watched for
@@ -432,6 +433,7 @@ func (n *RuncNotifier) monitorRuncInstance(bundleDir string, pidFile string) err
 	if err != nil {
 		return err
 	}
+	n.pidFileDirNotify = pidFileDirNotify // Used in Close().
 
 	// The pidfile does not exist yet, so we cannot monitor it directly.
 	// Instead we monitor its parent directory with FAN_EVENT_ON_CHILD to
@@ -576,5 +578,8 @@ func (n *RuncNotifier) watchRuncIterate() (bool, error) {
 func (n *RuncNotifier) Close() {
 	n.closed = true
 	n.runcBinaryNotify.File.Close()
+	if n.pidFileDirNotify != nil {
+		n.pidFileDirNotify.File.Close()
+	}
 	n.wg.Wait()
 }
