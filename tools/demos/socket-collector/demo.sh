@@ -43,6 +43,6 @@ run "kubectl annotate -n gadget trace/socket-collector gadget.kinvolk.io/operati
 sleep 2
 
 desc "Check the status of the Trace resource"
-run "kubectl get trace -n gadget socket-collector | jq -r ".items[0].status.output" | head -n 14"
+run "kubectl get trace -n gadget socket-collector -o json | jq -r ".status.output" | head -n 14"
 
 sleep 5
