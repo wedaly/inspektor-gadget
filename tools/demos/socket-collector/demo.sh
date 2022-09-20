@@ -17,7 +17,7 @@
 . $(dirname ${BASH_SOURCE})/../util.sh
 
 desc "Install the Trace custom resource for socket-collector"
-run "cat <<EOF | kubectl apply -f 
+run "cat <<EOF | kubectl apply -f -
 apiVersion: gadget.kinvolk.io/v1alpha1
 kind: Trace
 metadata:
