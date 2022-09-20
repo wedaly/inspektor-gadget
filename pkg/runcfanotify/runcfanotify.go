@@ -435,10 +435,13 @@ func (n *RuncNotifier) monitorRuncInstance(bundleDir string, pidFile string) err
 	}
 	n.pidFileDirNotify = pidFileDirNotify // Used in Close().
 
+	log.Infof("pidFileDirNotify fd = %d", pidFileDirNotify.Fd)
+
 	// The pidfile does not exist yet, so we cannot monitor it directly.
 	// Instead we monitor its parent directory with FAN_EVENT_ON_CHILD to
 	// get events on the directory's children.
 	pidFileDir := filepath.Dir(pidFile)
+	log.Infof("PIDFILEDIR = %s\n", pidFileDir)
 	err = pidFileDirNotify.Mark(unix.FAN_MARK_ADD, unix.FAN_ACCESS_PERM|unix.FAN_EVENT_ON_CHILD, unix.AT_FDCWD, pidFileDir)
 	if err != nil {
 		pidFileDirNotify.File.Close()
@@ -576,9 +579,11 @@ func (n *RuncNotifier) watchRuncIterate() (bool, error) {
 }
 
 func (n *RuncNotifier) Close() {
+	log.Infof("RUNCNOTIFIER CLOSE\n")
 	n.closed = true
 	n.runcBinaryNotify.File.Close()
 	if n.pidFileDirNotify != nil {
+		log.Infof("CLOSING PID FILE DIR NOTIFY!\n")
 		n.pidFileDirNotify.File.Close()
 	}
 	n.wg.Wait()
