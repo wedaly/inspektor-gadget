@@ -20,6 +20,7 @@ package tracer
 import (
 	"time"
 
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/iptables/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 )
@@ -29,7 +30,7 @@ type Tracer struct {
 	eventCallback func(types.Event)
 }
 
-func NewTracer(eventCallback func(types.Event)) (*Tracer, error) {
+func NewTracer(enricher gadgets.DataEnricher, eventCallback func(types.Event)) (*Tracer, error) {
 	t := &Tracer{
 		eventCallback: eventCallback,
 	}

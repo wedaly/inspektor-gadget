@@ -18,12 +18,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace"
-	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/top/tcp/tracer"
-	"github.com/inspektor-gadget/inspektor-gadget/pkg/types"
-	"github.com/labstack/gommon/log"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/iptables/tracer"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/iptables/types"
 )
 
 type Trace struct {
@@ -99,19 +100,10 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 		t.helpers.PublishEvent(traceName, string(r))
 	}
 
-	tracer, err := tracer.NewTracer(config, t.helpers, eventCallback)
+	tracer, err := tracer.NewTracer(t.helpers, eventCallback)
 	if err != nil {
-		trace.Status.OperationWarning = fmt.Sprint("failed to create core tracer. Falling back to standard one")
-
-		// fallback to standard tracer
-		log.Infof("Gadget %s: falling back to standard tracer. CO-RE tracer failed: %s",
-			trace.Spec.Gadget, err)
-
-		tracer, err = standardtracer.NewTracer(config, eventCallback)
-		if err != nil {
-			trace.Status.OperationError = fmt.Sprintf("failed to create tracer: %s", err)
-			return
-		}
+		trace.Status.OperationError = fmt.Sprint("failed to create tracer: %s", err)
+		return
 	}
 
 	t.tracer = tracer
