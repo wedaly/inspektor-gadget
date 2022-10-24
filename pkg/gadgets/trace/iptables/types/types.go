@@ -21,6 +21,7 @@ import (
 
 type Event struct {
 	eventtypes.Event
+	DebugCount uint64
 }
 
 func GetColumns() *columns.Columns[Event] {

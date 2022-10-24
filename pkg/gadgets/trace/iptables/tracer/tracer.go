@@ -54,6 +54,7 @@ func (t *Tracer) start() error {
 }
 
 func (t *Tracer) run() {
+	var count uint64
 	for {
 		select {
 		case <-t.ticker.C:
@@ -61,7 +62,9 @@ func (t *Tracer) run() {
 				Event: eventtypes.Event{
 					Type: eventtypes.NORMAL,
 				},
+				DebugCount: count,
 			})
+			count++
 		}
 	}
 }
