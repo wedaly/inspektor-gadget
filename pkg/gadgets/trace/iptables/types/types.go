@@ -21,7 +21,7 @@ import (
 
 type Event struct {
 	eventtypes.Event
-	DebugCount uint64
+	DebugCount uint64 `json:"debugCount,omitempty" column:"debugCount"`
 }
 
 func GetColumns() *columns.Columns[Event] {
