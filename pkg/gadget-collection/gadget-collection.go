@@ -31,6 +31,7 @@ import (
 	dns "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace/dns"
 	execsnoop "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace/exec"
 	fsslower "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace/fsslower"
+	iptables "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace/iptables"
 	mountsnoop "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace/mount"
 	networkgraph "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace/network"
 	oomkill "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace/oomkill"
@@ -54,6 +55,7 @@ func TraceFactories() map[string]gadgets.TraceFactory {
 		"execsnoop":         execsnoop.NewFactory(),
 		"filetop":           filetop.NewFactory(),
 		"fsslower":          fsslower.NewFactory(),
+		"iptables":          iptables.NewFactory(),
 		"opensnoop":         opensnoop.NewFactory(),
 		"mountsnoop":        mountsnoop.NewFactory(),
 		"network-graph":     networkgraph.NewFactory(),
