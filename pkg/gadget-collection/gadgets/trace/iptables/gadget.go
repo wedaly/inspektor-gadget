@@ -45,7 +45,7 @@ func NewFactory() gadgets.TraceFactory {
 }
 
 func (f *TraceFactory) Description() string {
-	return `iptables traces which iptables rules were applied to packets`
+	return `iptables traces which iptables rules are processed for packets` // TODO: ingress/egress?
 }
 
 func (f *TraceFactory) OutputModesSupported() map[gadgetv1alpha1.TraceOutputMode]struct{} {
