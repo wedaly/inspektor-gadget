@@ -15,9 +15,15 @@
 package iptables
 
 import (
+	"encoding/json"
+	"fmt"
+
 	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/top/tcp/tracer"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/types"
+	"github.com/labstack/gommon/log"
 )
 
 type Trace struct {
@@ -78,9 +84,49 @@ func (f *TraceFactory) Operations() map[gadgetv1alpha1.Operation]gadgets.TraceOp
 }
 
 func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
-	// TODO ?
+	if t.started {
+		trace.Status.State = gadgetv1alpha1.TraceStateStarted
+	}
+
+	traceName := gadgets.TraceName(trace.ObjectMeta.Namespace, trace.ObjectMeta.Name)
+
+	eventCallback := func(event types.Event) {
+		r, err := json.Marshal(event)
+		if err != nil {
+			log.Warnf("Gadget %s: error marshalling event: %s", trace.Spec.Gadget, err)
+			return
+		}
+		t.helpers.PublishEvent(traceName, string(r))
+	}
+
+	tracer, err := tracer.NewTracer(config, t.helpers, eventCallback)
+	if err != nil {
+		trace.Status.OperationWarning = fmt.Sprint("failed to create core tracer. Falling back to standard one")
+
+		// fallback to standard tracer
+		log.Infof("Gadget %s: falling back to standard tracer. CO-RE tracer failed: %s",
+			trace.Spec.Gadget, err)
+
+		tracer, err = standardtracer.NewTracer(config, eventCallback)
+		if err != nil {
+			trace.Status.OperationError = fmt.Sprintf("failed to create tracer: %s", err)
+			return
+		}
+	}
+
+	t.tracer = tracer
+	t.started = true
+	trace.Status.State = gadgetv1alpha1.TraceStateStarted
 }
 
 func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
-	// TODO ?
+	if !t.started {
+		trace.Status.OperationError = "Not started"
+		return
+	}
+
+	t.tracer.Stop()
+	t.tracer = nil
+	t.started = false
+	trace.Status.State = gadgetv1alpha1.TraceStateStopped
 }
