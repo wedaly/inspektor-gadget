@@ -114,6 +114,7 @@ func NewTraceCmd() *cobra.Command {
 	traceCmd.AddCommand(newSNICmd())
 	traceCmd.AddCommand(newTCPCmd())
 	traceCmd.AddCommand(newTcpconnectCmd())
+	traceCmd.AddCommand(newIptablesCmd())
 
 	return traceCmd
 }
