@@ -15,6 +15,7 @@
 package iptables
 
 import (
+	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets/trace"
 )
@@ -36,9 +37,50 @@ func NewFactory() gadgets.TraceFactory {
 	}
 }
 
+func (f *TraceFactory) Description() string {
+	return `iptables traces which iptables rules were applied to packets`
+}
+
+func (f *TraceFactory) OutputModesSupported() map[gadgetv1alpha1.TraceOutputMode]struct{} {
+	return map[gadgetv1alpha1.TraceOutputMode]struct{}{
+		gadgetv1alpha1.TraceOutputModeStream: {},
+	}
+}
+
 func deleteTrace(name string, t any) {
 	trace := t.(*Trace)
 	if trace.tracer != nil {
 		trace.tracer.Stop()
 	}
+}
+
+func (f *TraceFactory) Operations() map[gadgetv1alpha1.Operation]gadgets.TraceOperation {
+	n := func() interface{} {
+		return &Trace{
+			helpers: f.Helpers,
+		}
+	}
+
+	return map[gadgetv1alpha1.Operation]gadgets.TraceOperation{
+		gadgetv1alpha1.OperationStart: {
+			Doc: "Start iptables gadget",
+			Operation: func(name string, trace *gadgetv1alpha1.Trace) {
+				f.LookupOrCreate(name, n).(*Trace).Start(trace)
+			},
+		},
+		gadgetv1alpha1.OperationStop: {
+			Doc: "Stop iptables gadget",
+			Operation: func(name string, trace *gadgetv1alpha1.Trace) {
+				f.LookupOrCreate(name, n).(*Trace).Stop(trace)
+			},
+		},
+	}
+}
+
+func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
+	// TODO ?
+}
+
+func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
+	// TODO ?
 }
