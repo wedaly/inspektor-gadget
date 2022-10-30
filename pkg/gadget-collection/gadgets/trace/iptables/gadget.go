@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/coreos/go-iptables/iptables"
 	log "github.com/sirupsen/logrus"
 
 	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
@@ -106,7 +107,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	if err := t.installIptablesTraceRules(); err != nil {
+	if err := t.installIptablesTraceRules(trace); err != nil {
 		trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rules: %s", err)
 		tracer.Stop()
 		return
@@ -123,7 +124,7 @@ func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	if err := t.removeIptablesTraceRules(); err != nil {
+	if err := t.removeIptablesTraceRules(trace); err != nil {
 		trace.Status.OperationError = fmt.Sprintf("failed to remove iptables TRACE rules: %s", err)
 		return
 	}
@@ -134,12 +135,23 @@ func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
 	trace.Status.State = gadgetv1alpha1.TraceStateStopped
 }
 
-func (t *Trace) installIptablesTraceRules() error {
-	// TODO
+func (t *Trace) installIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
+	ipt, err := iptables.New()
+	if err != nil {
+		return err
+	}
+
+	// TODO: find the host veth pair based on trace filters...
+	// TODO: install iptables rule RAW PREROUTING
+
+	// TODO: find netns for container
+	// TODO: enter netns for container
+	// TODO: install iptables TRACE rule RAW OUTPUT
+
 	return nil
 }
 
-func (t *Trace) removeIptablesTraceRules() error {
-	// TODO
+func (t *Trace) removeIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
+	// TODO: remove all installed iptables rules
 	return nil
 }
