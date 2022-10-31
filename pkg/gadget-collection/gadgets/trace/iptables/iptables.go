@@ -16,7 +16,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 	}
 
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
-	for _, c := range helpers.GetContainersBySelector(trace.Spec.Filter) {
+	for _, c := range helpers.GetContainersBySelector(selector) {
 		// TODO: explain this
 		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
 		err = ipt.Append(hostRule[0], hostRule[1], hostRule[2:]...)
@@ -44,7 +44,8 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadge
 		return err
 	}
 
-	for _, c := range helpers.GetContainersBySelector(trace.Spec.Filter) {
+	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
+	for _, c := range helpers.GetContainersBySelector(selector) {
 		// TODO: explain this
 		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
 		err = ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...)
