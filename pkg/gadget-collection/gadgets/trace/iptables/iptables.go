@@ -7,6 +7,7 @@ import (
 	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/netnsenter"
+	log "github.com/sirupsen/logrus"
 )
 
 func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) error {
@@ -17,8 +18,8 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
 	for _, c := range helpers.GetContainersBySelector(selector) {
-		if c.VethPeerName != "" {
-			// TODO: log this
+		if c.VethPeerName == "" {
+			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.Name)
 			continue
 		}
 
@@ -51,8 +52,8 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadge
 
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
 	for _, c := range helpers.GetContainersBySelector(selector) {
-		if c.VethPeerName != "" {
-			// TODO: log this
+		if c.VethPeerName == "" {
+			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.Name)
 			continue
 		}
 
