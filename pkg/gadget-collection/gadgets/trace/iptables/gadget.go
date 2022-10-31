@@ -106,7 +106,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	if err := installIptablesTraceRules(trace); err != nil {
+	if err := installIptablesTraceRules(trace, t.helpers); err != nil {
 		trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rules: %s", err)
 		tracer.Stop()
 		return
@@ -123,7 +123,7 @@ func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	if err := removeIptablesTraceRules(trace); err != nil {
+	if err := removeIptablesTraceRules(trace, t.helpers); err != nil {
 		trace.Status.OperationError = fmt.Sprintf("failed to remove iptables TRACE rules: %s", err)
 		return
 	}

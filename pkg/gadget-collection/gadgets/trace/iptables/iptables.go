@@ -5,6 +5,7 @@ import (
 
 	"github.com/coreos/go-iptables/iptables"
 	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/netnsenter"
 )
 
@@ -14,7 +15,8 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 		return err
 	}
 
-	for _, container := range helpers.GetContainersBySelector(trace.Spec.Filter) {
+	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
+	for _, c := range helpers.GetContainersBySelector(trace.Spec.Filter) {
 		// TODO: explain this
 		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
 		err = ipt.Append(hostRule[0], hostRule[1], hostRule[2:]...)
@@ -42,7 +44,7 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadge
 		return err
 	}
 
-	for _, container := range helpers.GetContainersBySelector(trace.Spec.Filter) {
+	for _, c := range helpers.GetContainersBySelector(trace.Spec.Filter) {
 		// TODO: explain this
 		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
 		err = ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...)
