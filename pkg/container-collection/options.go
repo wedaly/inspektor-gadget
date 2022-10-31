@@ -616,11 +616,7 @@ func WithVethEnrichment() ContainerCollectionOption {
 }
 
 func vethPeerNameForContainerPid(pid int) (string, error) {
-	var peerIndex int
-	err := netnsenter.NetnsEnter(pid, func() error {
-		// TODO
-		return nil
-	})
+	peerIndex, err := vethPeerIndexForContainerPid(pid)
 	if err != nil {
 		return "", err
 	}
@@ -636,6 +632,33 @@ func vethPeerNameForContainerPid(pid int) (string, error) {
 	}
 
 	return vethPeerLink.Name, nil
+}
+
+func vethPeerIndexForContainerPid(pid int) (int, error) {
+	var peerIndex int
+	err := netnsenter.NetnsEnter(pid, func() error {
+		links, err := netlink.LinkList()
+		if err != nil {
+			return err
+		}
+
+		for _, link := range links {
+			vethLink, ok := link.(*netlink.Veth)
+			if !ok {
+				continue
+			}
+
+			peerIndex, err = netlink.VethPeerIndex(vethLink)
+			if err != nil {
+				return err
+			} else {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("could not find veth for container PID %d", pid)
+	})
+	return peerIndex, err
 }
 
 func WithNodeName(nodeName string) ContainerCollectionOption {
