@@ -44,16 +44,16 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
 
 func installContainerNetnsRawOutputIptablesRule(trace *gadgetv1alpha1.Trace, ipt *iptables.IPTables) error {
 	// TODO: how to find the pid for the pod netns?
+	rule := containerNetNsIptablesRule(trace)
 	return netnsenter.NetnsEnter(pid, func() error {
-		rule := containerNetNsIptablesRule(trace)
 		return ipt.Append(rule[0], rule[1], rule[2:]...)
 	})
 }
 
 func removeContainerNetsRawOutputIptablesRule(trace *gadgetv1alpha1.Trace, ipt *iptables.IPTables) error {
 	// TODO: how to find the pid for the pod netns?
+	rule := containerNetNsIptablesRule(trace)
 	return netnsenter.NetnsEnter(pid, func() error {
-		rule := containerNetNsIptablesRule(trace)
 		return ipt.DeleteIfExists(rule[0], rule[1], rule[2:]...)
 	})
 }
@@ -97,14 +97,3 @@ func iptablesCommentFromTrace(trace *gadgetv1alpha1.Trace) string {
 	}
 	return comment
 }
-
-// TODO: find the host veth pair based on trace filters...
-// TODO: install iptables rule RAW PREROUTING
-
-// TODO: find netns for container
-// TODO: enter netns for container
-// TODO: install iptables TRACE rule RAW OUTPUT
-
-// TODO: remove both sides
-// ipt.DeleteIfExists(table, chain rulespec...)
-// ipt.DeleteIfExists(table, chain rulespec...)
