@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/coreos/go-iptables/iptables"
 	log "github.com/sirupsen/logrus"
 
 	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
@@ -31,8 +30,8 @@ import (
 type Trace struct {
 	helpers gadgets.GadgetHelpers
 
-	started              bool
-	tracer               trace.Tracer
+	started bool
+	tracer  trace.Tracer
 }
 
 type TraceFactory struct {
@@ -107,7 +106,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	if err := t.installIptablesTraceRules(trace); err != nil {
+	if err := installIptablesTraceRules(trace); err != nil {
 		trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rules: %s", err)
 		tracer.Stop()
 		return
@@ -124,7 +123,7 @@ func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	if err := t.removeIptablesTraceRules(trace); err != nil {
+	if err := removeIptablesTraceRules(trace); err != nil {
 		trace.Status.OperationError = fmt.Sprintf("failed to remove iptables TRACE rules: %s", err)
 		return
 	}
