@@ -17,9 +17,11 @@ package containercollection
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/vishvananda/netlink"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +35,7 @@ import (
 	containerutils "github.com/inspektor-gadget/inspektor-gadget/pkg/container-utils"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/container-utils/cgroups"
 	runtimeclient "github.com/inspektor-gadget/inspektor-gadget/pkg/container-utils/runtime-client"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/netnsenter"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/runcfanotify"
 )
 
@@ -583,6 +586,56 @@ func WithLinuxNamespaceEnrichment() ContainerCollectionOption {
 		})
 		return nil
 	}
+}
+
+// TODO
+func WithVethEnrichment() ContainerCollectionOption {
+	return func(cc *ContainerCollection) error {
+		netnsHost, err := containerutils.GetNetNs(os.Getpid())
+		if err != nil {
+			return err
+		}
+
+		cc.containerEnrichers = append(cc.containerEnrichers, func(container *Container) bool {
+			// skip containers with host netns
+			if netnsHost == container.Netns {
+				return true
+			}
+
+			vethPeerName, err := vethPeerNameForContainerPid(int(container.Pid))
+			if err != nil {
+				log.Errorf("veth enricher: failed to get veth peer for container %s: %s", container.ID, err)
+				return true
+			}
+
+			container.VethPeerName = vethPeerName
+			return true
+		})
+		return nil
+	}
+}
+
+func vethPeerNameForContainerPid(pid int) (string, error) {
+	var peerIndex int
+	err := netnsenter.NetnsEnter(pid, func() error {
+		// TODO
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	peerLink, err := netlink.LinkByIndex(peerIndex)
+	if err != nil {
+		return "", err
+	}
+
+	vethPeerLink, ok := peerLink.(*netlink.Veth)
+	if !ok {
+		return "", fmt.Errorf("wrong type for peer link (expected veth)")
+	}
+
+	return vethPeerLink.Name, nil
 }
 
 func WithNodeName(nodeName string) ContainerCollectionOption {

@@ -25,7 +25,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 		}
 
 		// TODO: explain this
-		err = netnsenter.NetnsEnter(c.Pid, func() error {
+		err = netnsenter.NetnsEnter(int(c.Pid), func() error {
 			rule := containerNetNsIptablesTraceRule(trace)
 			return ipt.Append(rule[0], rule[1], rule[2:]...)
 		})
@@ -55,7 +55,7 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadge
 
 		// TODO: explain this
 		// TODO: what happens if this fails b/c the container was deleted...? probably log a warning?
-		err = netnsenter.NetnsEnter(c.Pid, func() error {
+		err = netnsenter.NetnsEnter(int(c.Pid), func() error {
 			rule := containerNetNsIptablesTraceRule(trace)
 			return ipt.Append(rule[0], rule[1], rule[2:]...)
 		})
