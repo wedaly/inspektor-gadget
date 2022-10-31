@@ -31,8 +31,8 @@ import (
 type Trace struct {
 	helpers gadgets.GadgetHelpers
 
-	started bool
-	tracer  trace.Tracer
+	started              bool
+	tracer               trace.Tracer
 }
 
 type TraceFactory struct {
@@ -133,25 +133,4 @@ func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
 	t.tracer = nil
 	t.started = false
 	trace.Status.State = gadgetv1alpha1.TraceStateStopped
-}
-
-func (t *Trace) installIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
-	ipt, err := iptables.New()
-	if err != nil {
-		return err
-	}
-
-	// TODO: find the host veth pair based on trace filters...
-	// TODO: install iptables rule RAW PREROUTING
-
-	// TODO: find netns for container
-	// TODO: enter netns for container
-	// TODO: install iptables TRACE rule RAW OUTPUT
-
-	return nil
-}
-
-func (t *Trace) removeIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
-	// TODO: remove all installed iptables rules
-	return nil
 }
