@@ -8,7 +8,7 @@ import (
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/netnsenter"
 )
 
-func installIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
+func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) error {
 	ipt, err := iptables.New()
 	if err != nil {
 		return err
@@ -16,7 +16,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
 
 	for _, container := range helpers.GetContainersBySelector(trace.Spec.Filter) {
 		// TODO: explain this
-		hostRule := hostNetnsIptablesRule(c.VethPeerName, trace)
+		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
 		err = ipt.Append(hostRule[0], hostRule[1], hostRule[2:]...)
 		if err != nil {
 			return err
@@ -24,7 +24,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
 
 		// TODO: explain this
 		err = netnsenter.NetnsEnter(c.Pid, func() error {
-			rule := containerNetNsIptablesRule(trace)
+			rule := containerNetNsIptablesTraceRule(trace)
 			return ipt.Append(rule[0], rule[1], rule[2:]...)
 		})
 		if err != nil {
@@ -36,7 +36,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
 	return nil
 }
 
-func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
+func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) error {
 	ipt, err := iptables.New()
 	if err != nil {
 		return err
@@ -44,8 +44,8 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
 
 	for _, container := range helpers.GetContainersBySelector(trace.Spec.Filter) {
 		// TODO: explain this
-		rule := hostNetnsIptablesRule(c.VethPeerName, trace)
-		err = ipt.DeleteIfExists(rule[0], rule[1], rule[2:]...)
+		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
+		err = ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
 		// TODO: explain this
 		// TODO: what happens if this fails b/c the container was deleted...? probably log a warning?
 		err = netnsenter.NetnsEnter(c.Pid, func() error {
-			rule := containerNetNsIptablesRule(trace)
+			rule := containerNetNsIptablesTraceRule(trace)
 			return ipt.Append(rule[0], rule[1], rule[2:]...)
 		})
 		if err != nil {
@@ -71,7 +71,7 @@ func validateFilterSelectsOneContainer(filter *gadgetv1alpha1.ContainerFilter) e
 	return nil
 }
 
-func containerNetNsIptablesRule(trace *gadgetv1alpha1.Trace) []string {
+func containerNetNsIptablesTraceRule(trace *gadgetv1alpha1.Trace) []string {
 	return []string{
 		"raw", "OUTPUT",
 		"-p", "tcp", "--syn",
@@ -80,7 +80,7 @@ func containerNetNsIptablesRule(trace *gadgetv1alpha1.Trace) []string {
 	}
 }
 
-func hostNetnsIptablesRule(iface string, trace *gadgetv1alpha1.Trace) []string {
+func hostNetnsIptablesTraceRule(iface string, trace *gadgetv1alpha1.Trace) []string {
 	return []string{
 		"raw", "PREROUTING",
 		"-i", iface,
