@@ -19,7 +19,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
 	for _, c := range helpers.GetContainersBySelector(selector) {
 		if c.VethPeerName == "" {
-			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.Name)
+			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.ID)
 			continue
 		}
 
@@ -53,7 +53,7 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadge
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
 	for _, c := range helpers.GetContainersBySelector(selector) {
 		if c.VethPeerName == "" {
-			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.Name)
+			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.ID)
 			continue
 		}
 
