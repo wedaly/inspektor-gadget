@@ -14,11 +14,19 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
 		return err
 	}
 
-	if err := installContainerNetnsRawOutputIptablesRule(trace, ipt); err != nil {
+	// TODO: explain this
+	err = netnsenter.NetnsEnter(pid, func() error {
+		rule := containerNetNsIptablesRule(trace)
+		return ipt.Append(rule[0], rule[1], rule[2:]...)
+	})
+	if err != nil {
 		return err
 	}
 
-	if err := installHostNetnsRawPreroutingIptablesRule(trace, ipt); err != nil {
+	// TODO: explain this
+	rule := hostNetnsIptablesRule(iface, trace)
+	err = ipt.Append(rule[0], rule[1], rule[2:]...)
+	if err != nil {
 		return err
 	}
 
@@ -31,31 +39,23 @@ func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace) error {
 		return err
 	}
 
-	if err := removeContainerNetsRawOutputIptablesRule(trace, ipt); err != nil {
+	// TODO: explain this
+	err = netnsenter.NetnsEnter(pid, func() error {
+		rule := containerNetNsIptablesRule(trace)
+		return ipt.Append(rule[0], rule[1], rule[2:]...)
+	})
+	if err != nil {
 		return err
 	}
 
-	if err := removeHostNetnsRawPreroutingIptablesRule(trace, ipt); err != nil {
+	// TODO: explain this
+	rule := hostNetnsIptablesRule(iface, trace)
+	err = ipt.DeleteIfExists(rule[0], rule[1], rule[2:]...)
+	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func installContainerNetnsRawOutputIptablesRule(trace *gadgetv1alpha1.Trace, ipt *iptables.IPTables) error {
-	// TODO: how to find the pid for the pod netns?
-	rule := containerNetNsIptablesRule(trace)
-	return netnsenter.NetnsEnter(pid, func() error {
-		return ipt.Append(rule[0], rule[1], rule[2:]...)
-	})
-}
-
-func removeContainerNetsRawOutputIptablesRule(trace *gadgetv1alpha1.Trace, ipt *iptables.IPTables) error {
-	// TODO: how to find the pid for the pod netns?
-	rule := containerNetNsIptablesRule(trace)
-	return netnsenter.NetnsEnter(pid, func() error {
-		return ipt.DeleteIfExists(rule[0], rule[1], rule[2:]...)
-	})
 }
 
 func containerNetNsIptablesRule(trace *gadgetv1alpha1.Trace) []string {
@@ -65,18 +65,6 @@ func containerNetNsIptablesRule(trace *gadgetv1alpha1.Trace) []string {
 		"-m", "comment", "--comment", iptablesCommentFromTrace(trace),
 		"-j", "TRACE",
 	}
-}
-
-func installHostNetnsRawPreroutingIptablesRule(trace *gadgetv1alpha1.Trace, ipt *iptables.IPTables) error {
-	// TODO: how to get iface
-	rule := hostNetnsIptablesRule(iface, trace)
-	return ipt.Append(rule[0], rule[1], rule[2:]...)
-}
-
-func removeHostNetnsRawPreroutingIptablesRule(trace *gadgetv1alpha1.Trace, ipt *iptables.IPTables) error {
-	// TODO: how to get iface
-	rule := hostNetnsIptablesRule(iface, trace)
-	return ipt.DeleteIfExists(rule[0], rule[1], rule[2:]...)
 }
 
 func hostNetnsIptablesRule(iface string, trace *gadgetv1alpha1.Trace) []string {
