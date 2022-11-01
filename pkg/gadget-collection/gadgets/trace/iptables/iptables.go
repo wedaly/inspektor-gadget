@@ -10,7 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) error {
+type iptablesCleanupFunc func()
+
+func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) (iptablesCleanupFunc, error) {
+	var cleanupFuncs []iptablesCleanupFunc
+
 	ipt, err := iptables.New()
 	if err != nil {
 		return err
@@ -18,8 +22,10 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
 	for _, c := range helpers.GetContainersBySelector(selector) {
+		containerId := c.ID // Copy for reference in cleanup func.
+
 		if c.VethPeerName == "" {
-			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.ID)
+			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, containerID)
 			continue
 		}
 
@@ -29,60 +35,37 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 		if err != nil {
 			return err
 		}
+		cleanupFuncs = append(cleanupFuncs, func() {
+			err := ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...)
+			if err != nil {
+				log.Warnf("could not delete iptables rule %s:%s in host netns", hostRule[0], hostRule[1])
+			}
+		})
 
 		// TODO: explain this
+		containerRule := containerNetNsIptablesTraceRule(trace)
 		err = netnsenter.NetnsEnter(int(c.Pid), func() error {
-			rule := containerNetNsIptablesTraceRule(trace)
-			return ipt.Append(rule[0], rule[1], rule[2:]...)
+			return ipt.Append(containerRule[0], containerRule[1], containerRule[2:]...)
 		})
 		if err != nil {
-			ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...) // TODO: explain this...
+			// On failure, rollback the host netns rule we created earlier.
+			ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...)
 			return err
 		}
-	}
-
-	return nil
-}
-
-func removeIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) error {
-	ipt, err := iptables.New()
-	if err != nil {
-		return err
-	}
-
-	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
-	for _, c := range helpers.GetContainersBySelector(selector) {
-		if c.VethPeerName == "" {
-			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.ID)
-			continue
-		}
-
-		// TODO: explain this
-		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
-		err = ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...)
-		if err != nil {
-			return err
-		}
-
-		// TODO: explain this
-		// TODO: what happens if this fails b/c the container was deleted...? probably log a warning?
-		err = netnsenter.NetnsEnter(int(c.Pid), func() error {
-			rule := containerNetNsIptablesTraceRule(trace)
-			return ipt.Append(rule[0], rule[1], rule[2:]...)
-		})
-		if err != nil {
-			return err
+		cleanupFuncs = append(cleanupFuncs, func() {
+			err := ipt.DeleteIfExists(containerRule[0], containerRule[1], containerRule[2:]...)
+			if err != nil {
+				log.Warnf("could not delete iptables rule %s:%s in container %s netns", containerRule[0], containerRule[1], containerID)
+			}
 		}
 	}
 
-	return nil
-}
-
-func validateFilterSelectsOneContainer(filter *gadgetv1alpha1.ContainerFilter) error {
-	if filter == nil || filter.Namespace == "" || filter.Podname == "" {
-		return fmt.Errorf("Missing pod")
+	fullCleanupFunc := func() {
+		for _, f := range cleanupFuncs {
+			f()
+		}
 	}
-	return nil
+	return fullCleanupFunc, nil
 }
 
 func containerNetNsIptablesTraceRule(trace *gadgetv1alpha1.Trace) []string {

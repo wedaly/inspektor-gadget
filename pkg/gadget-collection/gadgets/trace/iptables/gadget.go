@@ -30,8 +30,9 @@ import (
 type Trace struct {
 	helpers gadgets.GadgetHelpers
 
-	started bool
-	tracer  trace.Tracer
+	started     bool
+	tracer      trace.Tracer
+	cleanupFunc iptablesCleanupFunc
 }
 
 type TraceFactory struct {
@@ -106,7 +107,8 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	if err := installIptablesTraceRules(trace, t.helpers); err != nil {
+	cleanupFunc, err := installIptablesTraceRules(trace, t.helpers)
+	if err != nil {
 		trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rules: %s", err)
 		tracer.Stop()
 		return
@@ -114,6 +116,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 
 	t.tracer = tracer
 	t.started = true
+	t.cleanupFunc = cleanupFunc
 	trace.Status.State = gadgetv1alpha1.TraceStateStarted
 }
 
