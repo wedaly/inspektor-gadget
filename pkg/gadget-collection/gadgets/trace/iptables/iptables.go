@@ -15,6 +15,13 @@ type iptablesCleanupFunc func() error
 
 func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) ([]iptablesCleanupFunc, error) {
 	var cleanupFuncs []iptablesCleanupFunc
+	rollback := func() {
+		for _, f := range cleanupFuncs {
+			if err := f(); err != nil {
+				log.Warnf("could not rollback iptables rule on failure: %s", err)
+			}
+		}
+	}
 
 	ipt, err := iptables.New()
 	if err != nil {
@@ -23,7 +30,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
 	for _, c := range helpers.GetContainersBySelector(selector) {
-		containerID := c.ID // Copy for reference in cleanup func.
+		containerPid, containerID := int(c.Pid), c.ID // Copy for reference in cleanup func.
 
 		if c.VethPeerName == "" {
 			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, containerID)
@@ -34,6 +41,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
 		err = ipt.Append(hostRule[0], hostRule[1], hostRule[2:]...)
 		if err != nil {
+			rollback()
 			return nil, err
 		}
 		cleanupFuncs = append(cleanupFuncs, func() error {
@@ -46,20 +54,22 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 
 		// TODO: explain this
 		containerRule := containerNetNsIptablesTraceRule(trace)
-		err = netnsenter.NetnsEnter(int(c.Pid), func() error {
+		err = netnsenter.NetnsEnter(containerPid, func() error {
 			return ipt.Append(containerRule[0], containerRule[1], containerRule[2:]...)
 		})
 		if err != nil {
-			// On failure, rollback the host netns rule we created earlier.
-			ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...)
+			rollback()
 			return nil, err
 		}
 		cleanupFuncs = append(cleanupFuncs, func() error {
-			err := ipt.DeleteIfExists(containerRule[0], containerRule[1], containerRule[2:]...)
-			if err != nil {
-				return errors.Wrapf(err, "delete iptables rule %s:%s in container %s netns", containerRule[0], containerRule[1], containerID)
-			}
-			return nil
+			// TODO: ignore if netns doesn't exist error?
+			return netnsenter.NetnsEnter(containerPid, func() error {
+				err := ipt.DeleteIfExists(containerRule[0], containerRule[1], containerRule[2:]...)
+				if err != nil {
+					return errors.Wrapf(err, "delete iptables rule %s:%s in container %s netns", containerRule[0], containerRule[1], containerID)
+				}
+				return nil
+			})
 		})
 	}
 
