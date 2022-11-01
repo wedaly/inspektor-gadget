@@ -69,7 +69,7 @@ func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.Gadg
 func containerNetNsIptablesTraceRule(trace *gadgetv1alpha1.Trace) []string {
 	return []string{
 		"raw", "OUTPUT",
-		"-p", "tcp", "--syn",
+		"-p", "tcp", "--syn", // TODO: other packets too?
 		"-m", "comment", "--comment", iptablesCommentFromTrace(trace),
 		"-j", "TRACE",
 	}
