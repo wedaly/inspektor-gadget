@@ -30,9 +30,9 @@ import (
 type Trace struct {
 	helpers gadgets.GadgetHelpers
 
-	started     bool
-	tracer      trace.Tracer
-	cleanupFunc iptablesCleanupFunc
+	started      bool
+	tracer       trace.Tracer
+	cleanupFuncs []iptablesCleanupFunc
 }
 
 type TraceFactory struct {
@@ -107,7 +107,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	cleanupFunc, err := installIptablesTraceRules(trace, t.helpers)
+	cleanupFuncs, err := installIptablesTraceRules(trace, t.helpers)
 	if err != nil {
 		trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rules: %s", err)
 		tracer.Stop()
@@ -116,7 +116,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 
 	t.tracer = tracer
 	t.started = true
-	t.cleanupFunc = cleanupFunc
+	t.cleanupFuncs = append(t.cleanupFuncs, cleanupFuncs...)
 	trace.Status.State = gadgetv1alpha1.TraceStateStarted
 }
 
@@ -126,9 +126,11 @@ func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	if err := removeIptablesTraceRules(trace, t.helpers); err != nil {
-		trace.Status.OperationError = fmt.Sprintf("failed to remove iptables TRACE rules: %s", err)
-		return
+	for _, f := range t.cleanupFuncs {
+		if err := f(); err != nil {
+			trace.Status.OperationError = fmt.Sprintf("failed to cleanup iptables rule: %s", err)
+			return
+		}
 	}
 
 	t.tracer.Stop()
