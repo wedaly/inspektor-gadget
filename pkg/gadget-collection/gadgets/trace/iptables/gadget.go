@@ -125,7 +125,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 		}
 	}
 
-	for _, r := range iptablesRules(trace, t.helpers) {
+	for _, r := range iptablesTraceRules(trace, t.helpers) {
 		if err := r.install(ipt); err != nil {
 			rollback()
 			trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rule %s: %s", r, err)

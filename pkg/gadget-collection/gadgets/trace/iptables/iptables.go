@@ -41,7 +41,7 @@ func (rule iptablesRule) String() string {
 		strings.Join(rule.spec, " "))
 }
 
-func iptablesRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) []iptablesRule {
+func iptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) []iptablesRule {
 	var rules []iptablesRule
 	comment := iptablesCommentFromTrace(trace)
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
