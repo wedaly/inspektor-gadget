@@ -118,11 +118,10 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 	var installedRules []iptablesRule
 	for _, r := range iptablesRules(trace, t.helpers) {
 		if err := r.install(ipt); err != nil {
-			// Attempt to remove all installed rules.
+			// On error, rollback rules we already installed.
 			for _, ruleToRemove := range installedRules {
 				ruleToRemove.remove(ipt)
 			}
-
 			trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rule %s: %s", r, err)
 			tracer.Stop()
 			return
