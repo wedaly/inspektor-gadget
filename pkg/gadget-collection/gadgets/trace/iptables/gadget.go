@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/coreos/go-iptables/iptables"
 	log "github.com/sirupsen/logrus"
 
 	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
@@ -30,9 +31,9 @@ import (
 type Trace struct {
 	helpers gadgets.GadgetHelpers
 
-	started      bool
-	tracer       trace.Tracer
-	cleanupFuncs []iptablesCleanupFunc
+	started        bool
+	tracer         trace.Tracer
+	installedRules []iptablesRule
 }
 
 type TraceFactory struct {
@@ -107,16 +108,31 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	cleanupFuncs, err := installIptablesTraceRules(trace, t.helpers)
+	ipt, err := iptables.New()
 	if err != nil {
-		trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rules: %s", err)
+		trace.Status.OperationError = fmt.Sprintf("failed to initialize iptables: %s", err)
 		tracer.Stop()
 		return
 	}
 
+	var installedRules []iptablesRule
+	for _, r := range iptablesRules(trace, t.helpers) {
+		if err := r.install(ipt); err != nil {
+			// Attempt to remove all installed rules.
+			for _, ruleToRemove := range installedRules {
+				ruleToRemove.remove(ipt)
+			}
+
+			trace.Status.OperationError = fmt.Sprintf("failed to install iptables TRACE rule %s: %s", r, err)
+			tracer.Stop()
+			return
+		}
+		installedRules = append(installedRules, r)
+	}
+
 	t.tracer = tracer
+	t.installedRules = installedRules
 	t.started = true
-	t.cleanupFuncs = append(t.cleanupFuncs, cleanupFuncs...)
 	trace.Status.State = gadgetv1alpha1.TraceStateStarted
 }
 
@@ -126,15 +142,23 @@ func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
 		return
 	}
 
-	for _, f := range t.cleanupFuncs {
-		if err := f(); err != nil {
-			trace.Status.OperationError = fmt.Sprintf("failed to cleanup iptables rule: %s", err)
+	ipt, err := iptables.New()
+	if err != nil {
+		trace.Status.OperationError = fmt.Sprintf("failed to initialize iptables: %s", err)
+		return
+	}
+
+	for _, r := range t.installedRules {
+		// The remove operation is idempotent.
+		if err := r.remove(ipt); err != nil {
+			trace.Status.OperationError = fmt.Sprintf("failed to remove iptables rule: %s", err)
 			return
 		}
 	}
 
 	t.tracer.Stop()
 	t.tracer = nil
+	t.installedRules = nil
 	t.started = false
 	trace.Status.State = gadgetv1alpha1.TraceStateStopped
 }

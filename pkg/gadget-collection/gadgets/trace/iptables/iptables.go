@@ -2,97 +2,81 @@ package iptables
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
 	gadgetv1alpha1 "github.com/inspektor-gadget/inspektor-gadget/pkg/apis/gadget/v1alpha1"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-collection/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/netnsenter"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
-type iptablesCleanupFunc func() error
+type iptablesRule struct {
+	containerPid int // zero for host netns
+	table        string
+	chain        string
+	spec         []string
+}
 
-func installIptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) ([]iptablesCleanupFunc, error) {
-	var cleanupFuncs []iptablesCleanupFunc
-	rollback := func() {
-		for _, f := range cleanupFuncs {
-			if err := f(); err != nil {
-				log.Warnf("could not rollback iptables rule on failure: %s", err)
-			}
-		}
-	}
+func (rule iptablesRule) install(ipt *iptables.IPTables) error {
+	// If containerPid is zero, NetnsEnter does nothing (stay in host netns).
+	return netnsenter.NetnsEnter(rule.containerPid, func() error {
+		return ipt.Append(rule.table, rule.chain, rule.spec...)
+	})
+}
 
-	ipt, err := iptables.New()
-	if err != nil {
-		return nil, err
-	}
+func (rule iptablesRule) remove(ipt *iptables.IPTables) error {
+	// If containerPid is zero, NetnsEnter does nothing (stay in host netns).
+	return netnsenter.NetnsEnter(rule.containerPid, func() error {
+		return ipt.DeleteIfExists(rule.table, rule.chain, rule.spec...)
+	})
+}
 
+func (rule iptablesRule) String() string {
+	return fmt.Sprintf(
+		"containerPid=%d, table=%s, chain=%s, spec=%q",
+		rule.containerPid,
+		rule.table,
+		rule.chain,
+		strings.Join(rule.spec, " "))
+}
+
+func iptablesRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) []iptablesRule {
+	var rules []iptablesRule
+	comment := iptablesCommentFromTrace(trace)
 	selector := gadgets.ContainerSelectorFromContainerFilter(trace.Spec.Filter)
 	for _, c := range helpers.GetContainersBySelector(selector) {
-		containerPid, containerID := int(c.Pid), c.ID // Copy for reference in cleanup func.
-
 		if c.VethPeerName == "" {
-			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, containerID)
+			log.Warnf("Gadget %s: skipping container %s because its VethPeerName is empty", trace.Spec.Gadget, c.ID)
 			continue
 		}
 
-		// TODO: explain this
-		hostRule := hostNetnsIptablesTraceRule(c.VethPeerName, trace)
-		err = ipt.Append(hostRule[0], hostRule[1], hostRule[2:]...)
-		if err != nil {
-			rollback()
-			return nil, err
-		}
-		cleanupFuncs = append(cleanupFuncs, func() error {
-			err := ipt.DeleteIfExists(hostRule[0], hostRule[1], hostRule[2:]...)
-			if err != nil {
-				return errors.Wrapf(err, "delete iptables rule %s:%s in host netns", hostRule[0], hostRule[1])
-			}
-			return nil
-		})
-
-		// TODO: explain this
-		containerRule := containerNetNsIptablesTraceRule(trace)
-		err = netnsenter.NetnsEnter(containerPid, func() error {
-			return ipt.Append(containerRule[0], containerRule[1], containerRule[2:]...)
-		})
-		if err != nil {
-			rollback()
-			return nil, err
-		}
-		cleanupFuncs = append(cleanupFuncs, func() error {
-			// TODO: ignore if netns doesn't exist error?
-			return netnsenter.NetnsEnter(containerPid, func() error {
-				err := ipt.DeleteIfExists(containerRule[0], containerRule[1], containerRule[2:]...)
-				if err != nil {
-					return errors.Wrapf(err, "delete iptables rule %s:%s in container %s netns", containerRule[0], containerRule[1], containerID)
-				}
-				return nil
+		rules = append(
+			rules,
+			iptablesRule{
+				containerPid: int(c.Pid),
+				table:        "raw",
+				chain:        "OUTPUT",
+				spec: []string{
+					"-p", "tcp", "--syn",
+					"-m", "comment", "--comment", comment,
+					"-j", "TRACE",
+				},
+			},
+			iptablesRule{
+				table: "raw",
+				chain: "OUTPUT",
+				spec: []string{
+					"-i", c.VethPeerName,
+					"-p", "tcp", "--syn",
+					"-m", "comment", "--comment", comment,
+					"-j", "TRACE",
+				},
 			})
-		})
+
 	}
 
-	return cleanupFuncs, nil
-}
-
-func containerNetNsIptablesTraceRule(trace *gadgetv1alpha1.Trace) []string {
-	return []string{
-		"raw", "OUTPUT",
-		"-p", "tcp", "--syn", // TODO: other packets too?
-		"-m", "comment", "--comment", iptablesCommentFromTrace(trace),
-		"-j", "TRACE",
-	}
-}
-
-func hostNetnsIptablesTraceRule(iface string, trace *gadgetv1alpha1.Trace) []string {
-	return []string{
-		"raw", "PREROUTING",
-		"-i", iface,
-		"-p", "tcp", "--syn", // TODO: other packets too?
-		"-m", "comment", "--comment", iptablesCommentFromTrace(trace),
-		"-j", "TRACE",
-	}
+	return rules
 }
 
 func iptablesCommentFromTrace(trace *gadgetv1alpha1.Trace) string {
