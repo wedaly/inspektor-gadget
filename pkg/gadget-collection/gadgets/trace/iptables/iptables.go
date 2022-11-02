@@ -51,9 +51,9 @@ func iptablesRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) [
 			continue
 		}
 
-		rules = append(
-			rules,
-			iptablesRule{
+		rulesForContainer := []iptablesRule{
+			// TCP SYN packets leaving container netns
+			{
 				containerPid: int(c.Pid),
 				table:        "raw",
 				chain:        "OUTPUT",
@@ -63,17 +63,45 @@ func iptablesRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpers) [
 					"-j", "TRACE",
 				},
 			},
-			iptablesRule{
+
+			// ICMP packets leaving container netns
+			{
+				containerPid: int(c.Pid),
+				table:        "raw",
+				chain:        "OUTPUT",
+				spec: []string{
+					"-p", "icmp",
+					"-m", "comment", "--comment", comment,
+					"-j", "TRACE",
+				},
+			},
+
+			// TCP SYN packets arriving at host netns from container veth
+			{
 				table: "raw",
-				chain: "OUTPUT",
+				chain: "PREROUTING",
 				spec: []string{
 					"-i", c.VethPeerName,
 					"-p", "tcp", "--syn",
 					"-m", "comment", "--comment", comment,
 					"-j", "TRACE",
 				},
-			})
+			},
 
+			// ICMP packets arriving at host netns from container veth
+			{
+				table: "raw",
+				chain: "PREROUTING",
+				spec: []string{
+					"-i", c.VethPeerName,
+					"-p", "icmp",
+					"-m", "comment", "--comment", comment,
+					"-j", "TRACE",
+				},
+			},
+		}
+
+		rules = append(rules, rulesForContainer...)
 	}
 
 	return rules
