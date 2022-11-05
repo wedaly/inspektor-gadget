@@ -21,7 +21,7 @@ type iptablesRule struct {
 func (rule iptablesRule) install(ipt *iptables.IPTables) error {
 	// If containerPid is zero, NetnsEnter does nothing (stay in host netns).
 	return netnsenter.NetnsEnter(rule.containerPid, func() error {
-		return ipt.Append(rule.table, rule.chain, rule.spec...)
+		return ipt.AppendUnique(rule.table, rule.chain, rule.spec...)
 	})
 }
 
