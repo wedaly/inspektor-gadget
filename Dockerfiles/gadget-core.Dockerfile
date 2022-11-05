@@ -63,6 +63,7 @@ FROM ${BASE_IMAGE}
 
 # install runtime dependencies  according to the package manager
 # available on the base image
+# TODO: install iptables for pkg managers other than apt
 RUN set -ex; \
 	if command -v tdnf; then \
 		tdnf install -y libseccomp wget curl util-linux; \
@@ -70,7 +71,7 @@ RUN set -ex; \
 		yum install -y libseccomp wget curl util-linux; \
 	elif command -v apt-get; then \
 		apt-get update && \
-		apt-get install -y seccomp wget curl util-linux; \
+		apt-get install -y seccomp wget curl util-linux iptables; \
 	elif command -v apk; then \
 		apk add gcompat libseccomp bash wget curl util-linux; \
 	fi && \
