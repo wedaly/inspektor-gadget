@@ -591,14 +591,18 @@ func WithLinuxNamespaceEnrichment() ContainerCollectionOption {
 // TODO
 func WithVethEnrichment() ContainerCollectionOption {
 	return func(cc *ContainerCollection) error {
+		log.Infof("veth enricher: DEBUG apply")
 		netnsHost, err := containerutils.GetNetNs(os.Getpid())
 		if err != nil {
 			return err
 		}
+		log.Infof("veth enricher: DEBUG netnsHost = %d", netnsHost)
 
 		cc.containerEnrichers = append(cc.containerEnrichers, func(container *Container) bool {
+			log.Infof("veth enricher: DEBUG run for container ID=%d, Pid=%d", container.ID, container.Pid)
 			// skip containers with host netns
 			if netnsHost == container.Netns {
+				log.Infof("veth enricher: DEBUG exit b/c host netns")
 				return true
 			}
 
@@ -607,6 +611,7 @@ func WithVethEnrichment() ContainerCollectionOption {
 				log.Errorf("veth enricher: failed to get veth peer for container %s: %s", container.ID, err)
 				return true
 			}
+			log.Infof("veth enricher: DEBUG vethPeerName=%s", vethPeerName)
 
 			container.VethPeerName = vethPeerName
 			return true
