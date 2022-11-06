@@ -143,6 +143,8 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 }
 
 func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
+	log.Infof("DEBUG: STOP triggered")
+
 	if !t.started {
 		trace.Status.OperationError = "Not started"
 		return
