@@ -122,6 +122,8 @@ func iptablesTraceRules(trace *gadgetv1alpha1.Trace, helpers gadgets.GadgetHelpe
 }
 
 func iptablesCommentFromTrace(trace *gadgetv1alpha1.Trace) string {
+	// TODO: this comment makes rules from different traces on the same gadget unique...
+	// is that what we want?
 	comment := fmt.Sprintf("IG-Trace=%s/%s", trace.ObjectMeta.Namespace, trace.ObjectMeta.Name)
 	// iptables allow only 256 characters
 	if len(comment) > 256 {
