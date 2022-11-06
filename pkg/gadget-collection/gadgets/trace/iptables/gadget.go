@@ -57,6 +57,7 @@ func (f *TraceFactory) OutputModesSupported() map[gadgetv1alpha1.TraceOutputMode
 }
 
 func deleteTrace(name string, t any) {
+	log.Infof("DEBUG: deleteTrace invoked")
 	trace := t.(*Trace)
 	if trace.tracer != nil {
 		trace.tracer.Stop()
