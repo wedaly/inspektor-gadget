@@ -121,7 +121,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 			if err := ruleToRemove.remove(ipt); err != nil {
 				log.Warnf("Gadget %s: error removing iptables rule %s (rollback from error)", trace.Spec.Gadget, ruleToRemove)
 			}
-			log.Debugf("Gadget %s: removed iptables rule %s (rollback from error)", trace.Spec.Gadget, ruleToRemove)
+			log.Infof("Gadget %s: removed iptables rule %s (rollback from error)", trace.Spec.Gadget, ruleToRemove)
 		}
 	}
 
@@ -132,7 +132,7 @@ func (t *Trace) Start(trace *gadgetv1alpha1.Trace) {
 			tracer.Stop()
 			return
 		}
-		log.Debugf("Gadget %s: installed iptables rule %s", trace.Spec.Gadget, r)
+		log.Infof("Gadget %s: installed iptables rule %s", trace.Spec.Gadget, r)
 		installedRules = append(installedRules, r)
 	}
 
@@ -160,7 +160,7 @@ func (t *Trace) Stop(trace *gadgetv1alpha1.Trace) {
 			trace.Status.OperationError = fmt.Sprintf("failed to remove iptables rule: %s", err)
 			return
 		}
-		log.Debugf("Gadget %s: removed iptables rule %s", trace.Spec.Gadget, r)
+		log.Infof("Gadget %s: removed iptables rule %s", trace.Spec.Gadget, r)
 	}
 
 	t.tracer.Stop()
