@@ -79,6 +79,7 @@ int ig_trace_dns(struct __sk_buff *skb)
 
 	__u16 ancount = load_half(skb, DNS_OFF + offsetof(struct dnshdr, ancount));
 	__u16 nscount = load_half(skb, DNS_OFF + offsetof(struct dnshdr, nscount));
+
 	// Skip DNS queries with answers
 	if ((flags.qr == 0) && (ancount + nscount != 0))
 		return 0;
