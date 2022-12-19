@@ -242,7 +242,7 @@ func parseDNSEvent(rawSample []byte) (*types.Event, error) {
 		event.QType = "UNASSIGNED"
 	}
 
-	rCodeUint = uint(bpfevent.Rcode)
+	rCodeUint := uint(bpfEvent.Rcode)
 	event.ResponseCode, ok = rCodeNames[rCodeUint]
 	if !ok {
 		event.ResponseCode = "UNKNOWN"
