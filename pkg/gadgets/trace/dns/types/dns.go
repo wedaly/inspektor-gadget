@@ -29,13 +29,13 @@ const (
 type Event struct {
 	eventtypes.Event
 
-	ID           string          `json:"id,omitempty" column:"id,width:4,fixed,hide"`
-	Qr           DNSPktType      `json:"qr,omitempty" column:"qr,width:2,fixed"`
-	Nameserver   string          `json:"nameserver,omitempty" column:"nameserver,template:ipaddr"`
-	PktType      string          `json:"pktType,omitempty" column:"type,minWidth:7,maxWidth:9"`
-	QType        string          `json:"qtype,omitempty" column:"qtype,minWidth:5,maxWidth:10"`
-	DNSName      string          `json:"name,omitempty" column:"name,width:30"`
-	ResponseCode string          `json:"responseCode,omitEmpty"  column:"responseCode"`
+	ID           string     `json:"id,omitempty" column:"id,width:4,fixed,hide"`
+	Qr           DNSPktType `json:"qr,omitempty" column:"qr,width:2,fixed"`
+	Nameserver   string     `json:"nameserver,omitempty" column:"nameserver,template:ipaddr"`
+	PktType      string     `json:"pktType,omitempty" column:"type,minWidth:7,maxWidth:9"`
+	QType        string     `json:"qtype,omitempty" column:"qtype,minWidth:5,maxWidth:10"`
+	DNSName      string     `json:"name,omitempty" column:"name,width:30"`
+	ResponseCode string     `json:"rcode,omitEmpty" column:"rcode,minWidth:9"`
 }
 
 func GetColumns() *columns.Columns[Event] {
