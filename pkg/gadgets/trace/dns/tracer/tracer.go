@@ -165,9 +165,9 @@ var qTypeNames = map[uint]string{
 
 const MaxDNSName = int(unsafe.Sizeof(dnsEventT{}.Name))
 
-// DNS header RCODE field.
+// DNS header RCODE (response code) field.
 // https://datatracker.ietf.org/doc/rfc1035#section-4.1.1
-var rCodeNames = map[uint]string{
+var rCodeNames = map[uint8]string{
 	0: "NoError",
 	1: "FormErr",
 	2: "ServFail",
