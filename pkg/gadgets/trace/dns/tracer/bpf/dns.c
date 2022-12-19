@@ -116,6 +116,7 @@ int ig_trace_dns(struct __sk_buff *skb)
 	event.saddr_v4 = bpf_htonl(event.saddr_v4);
 
 	event.qr = flags.qr;
+	event.rcode = flags.rcode;
 
 	bpf_skb_load_bytes(skb, DNS_OFF + sizeof(struct dnshdr), event.name, len);
 

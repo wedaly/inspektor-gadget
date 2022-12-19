@@ -26,23 +26,48 @@ const (
 	DNSPktTypeResponse DNSPktType = "R"
 )
 
+// DNS header RCODE field.
 // https://datatracker.ietf.org/doc/rfc1035#section-4.1.1
-type DNSResponseCode string
+type DNSResponseCode uint8
 
 const (
-	DNSResponseCode
+	DNSResponseCodeSuccess        DNSResponseCode = 0 // NoError
+	DNSResponseCodeFormatError    DNSResponseCode = 1 // FormErr
+	DNSResponseCodeServerFailure  DNSResponseCode = 2 // ServFail
+	DNSResponseCodeNameError      DNSResponseCode = 3 // NXDomain
+	DNSResponseCodeNotImplemented DNSResponseCode = 4 // NotImp
+	DNSResponseCodeRefused        DNSResponseCode = 5 // Refused
 )
+
+func (rcode DNSResponseCode) String() string {
+	switch rcode {
+	case DNSResponseCodeSuccess:
+		return "NoError"
+	case DNSResponseCodeFormatError:
+		return "FormErr"
+	case DNSResponseCodeServerFailure:
+		return "ServFail"
+	case DNSResponseCodeNameError:
+		return "NXDomain"
+	case DNSResponseCodeNotImplemented:
+		return "NotImp"
+	case DNSResponseCodeRefused:
+		return "Refused"
+	default:
+		return ""
+	}
+}
 
 type Event struct {
 	eventtypes.Event
 
-	ID         string     `json:"id,omitempty" column:"id,width:4,fixed,hide"`
-	Qr         DNSPktType `json:"qr,omitempty" column:"qr,width:2,fixed"`
-	Nameserver string     `json:"nameserver,omitempty" column:"nameserver,template:ipaddr"`
-	PktType    string     `json:"pktType,omitempty" column:"type,minWidth:7,maxWidth:9"`
-	QType      string     `json:"qtype,omitempty" column:"qtype,minWidth:5,maxWidth:10"`
-	DNSName    string     `json:"name,omitempty" column:"name,width:30"`
-	ResponseCode uint8 `json:"responseCode,omitEmpty" 
+	ID           string          `json:"id,omitempty" column:"id,width:4,fixed,hide"`
+	Qr           DNSPktType      `json:"qr,omitempty" column:"qr,width:2,fixed"`
+	Nameserver   string          `json:"nameserver,omitempty" column:"nameserver,template:ipaddr"`
+	PktType      string          `json:"pktType,omitempty" column:"type,minWidth:7,maxWidth:9"`
+	QType        string          `json:"qtype,omitempty" column:"qtype,minWidth:5,maxWidth:10"`
+	DNSName      string          `json:"name,omitempty" column:"name,width:30"`
+	ResponseCode DNSResponseCode `json:"responseCode,omitEmpty"  column:"responseCode"`
 }
 
 func GetColumns() *columns.Columns[Event] {

@@ -21,8 +21,9 @@ type dnsEventT struct {
 	Qtype   uint16
 	Qr      uint8
 	PktType uint8
+	Rcode   uint16
 	Name    [255]uint8
-	_       [3]byte
+	_       [1]byte
 }
 
 // loadDns returns the embedded CollectionSpec for dns.
