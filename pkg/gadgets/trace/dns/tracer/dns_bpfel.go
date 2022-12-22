@@ -74,7 +74,8 @@ type dnsProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type dnsMapSpecs struct {
-	Events *ebpf.MapSpec `ebpf:"events"`
+	Events   *ebpf.MapSpec `ebpf:"events"`
+	ReqTsMap *ebpf.MapSpec `ebpf:"req_ts_map"`
 }
 
 // dnsObjects contains all objects after they have been loaded into the kernel.
@@ -96,12 +97,14 @@ func (o *dnsObjects) Close() error {
 //
 // It can be passed to loadDnsObjects or ebpf.CollectionSpec.LoadAndAssign.
 type dnsMaps struct {
-	Events *ebpf.Map `ebpf:"events"`
+	Events   *ebpf.Map `ebpf:"events"`
+	ReqTsMap *ebpf.Map `ebpf:"req_ts_map"`
 }
 
 func (m *dnsMaps) Close() error {
 	return _DnsClose(
 		m.Events,
+		m.ReqTsMap,
 	)
 }
 

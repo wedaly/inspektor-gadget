@@ -32,6 +32,17 @@ struct {
 	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
 } events SEC(".maps");
 
+// LRU hash map for storing DNS request ID -> timestamp.
+// This is used to calculate the latency between the DNS request and response.
+// Limit the number of entries to avoid unbounded memory consumption.
+#define MAX_REQ_TS_MAP_ENTRIES 256
+struct {
+	__uint(type, BPF_MAP_TYPE_LRU_HASH);
+	__uint(max_entries, MAX_REQ_TS_MAP_ENTRIES);
+	__type(key, __u16);   // ID field of the DNS packet
+	__type(value, __u64); // Timestamp for when the DNS request was sent.
+} req_ts_map SEC(".maps");
+
 // https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1
 union dnsflags {
 	struct {
@@ -140,6 +151,19 @@ int ig_trace_dns(struct __sk_buff *skb)
 	// Read QTYPE right after the QNAME
 	// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
 	event.qtype = load_half(skb, DNS_OFF + sizeof(struct dnshdr) + len + 1);
+
+	__u64 ts = bpf_ktime_get_boot_ns(); // TODO: consolidate with https://github.com/inspektor-gadget/inspektor-gadget/pull/1205
+	if (flags.qr == 0) {
+		// Store the timestamp of the query so we can calculate latency when the response is received.
+		bpf_map_update_elem(&req_ts_map, &(event.id), &ts, BPF_ANY);
+	} else {
+		// Calculate the latency for the response.
+		__u64 *req_ts = bpf_map_lookup_elem(&req_ts_map, &(event.id));
+		if (req_ts != NULL) {
+			// TODO: set event.latency
+			bpf_map_delete_elem(&req_ts_map, &(event.id));
+		}
+	}
 
 	bpf_perf_event_output(skb, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
 
