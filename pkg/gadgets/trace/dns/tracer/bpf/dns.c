@@ -71,6 +71,26 @@ struct dnshdr {
 	__u16 arcount; // number of additional records
 };
 
+static __u32 dns_name_length(struct __sk_buff *skb) {
+	// This loop iterates over the DNS labels to find the total DNS name length.
+	unsigned int i;
+	unsigned int skip = 0;
+	for (i = 0; i < MAX_DNS_NAME ; i++) {
+		if (skip != 0) {
+			skip--;
+		} else {
+			int label_len = load_byte(skb, DNS_OFF + sizeof(struct dnshdr) + i);
+			if (label_len == 0)
+				break;
+			// The simple solution "i += label_len" gives verifier
+			// errors, so work around with skip.
+			skip = label_len;
+		}
+	}
+
+	return i < MAX_DNS_NAME ? i : MAX_DNS_NAME;
+}
+
 SEC("socket1")
 int ig_trace_dns(struct __sk_buff *skb)
 {
@@ -91,28 +111,12 @@ int ig_trace_dns(struct __sk_buff *skb)
 
 	__u16 ancount = load_half(skb, DNS_OFF + offsetof(struct dnshdr, ancount));
 	__u16 nscount = load_half(skb, DNS_OFF + offsetof(struct dnshdr, nscount));
+
 	// Skip DNS queries with answers
 	if ((flags.qr == 0) && (ancount + nscount != 0))
 		return 0;
 
-	// This loop iterates over the DNS labels to find the total DNS name
-	// length.
-	unsigned int i;
-	unsigned int skip = 0;
-	for (i = 0; i < MAX_DNS_NAME ; i++) {
-		if (skip != 0) {
-			skip--;
-		} else {
-			int label_len = load_byte(skb, DNS_OFF + sizeof(struct dnshdr) + i);
-			if (label_len == 0)
-				break;
-			// The simple solution "i += label_len" gives verifier
-			// errors, so work around with skip.
-			skip = label_len;
-		}
-	}
-
-	__u32 len = i < MAX_DNS_NAME ? i : MAX_DNS_NAME;
+	__u32 len = dns_name_length(skb);
 	if  (len == 0)
 		return 0;
 
