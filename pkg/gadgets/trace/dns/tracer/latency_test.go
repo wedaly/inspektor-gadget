@@ -111,6 +111,13 @@ func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
 	if latency != 0 {
 		t.Fatalf("Expected zero latency but got %d", latency)
 	}
+
+	// Response to prior request that wasn't yet dropped should report latency.
+	latency = c.calculateDnsResponseLatency(addr, lastId - uint16(dnsLatencyMapSize) - 1, 600)
+	expectedLatency = 500 * time.Nanosecond
+	if latency != expectedLatency {
+		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
+	}
 }
 
 func TestDnsLatencyCalculatorResponseWithZeroTimestamp(t *testing.T) {
