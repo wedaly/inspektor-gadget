@@ -52,7 +52,7 @@ func GetColumns() *columns.Columns[Event] {
 			return event.Latency.String()
 		} else {
 			// latency <= 0 means none reported (e.g. for requests or responses whose request was evicted)
-			return "" 
+			return ""
 		}
 	})
 
