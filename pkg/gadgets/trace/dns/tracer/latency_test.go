@@ -38,3 +38,22 @@ func TestDnsLatencyCalculatorRequestResponse(t *testing.T) {
 		t.Fatalf("Expected zero outstanding requests, but got %d", n)
 	}
 }
+
+func TestDnsLatencyCalculatorResponseWithoutMatchingRequest(t *testing.T) {
+	addr := [16]uint8{1}
+	id := uint16(1)
+	c := newDnsLatencyCalculator()
+
+	// Response for an addr/id without a corresponding request.
+	latency := c.calculateDnsResponseLatency(addr, id, 500)
+	if latency != 0 {
+		t.Fatalf("Expected zero latency but got %d", latency)
+	}
+	if n := c.numOutstandingRequests(); n != 0 {
+		t.Fatalf("Expected zero outstanding requests, but got %d", n)
+	}
+}
+
+func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
+	//c := newDnsLatencyCalculator()
+}

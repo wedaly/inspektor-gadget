@@ -70,6 +70,8 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 			return 0
 		}
 		// Don't bother deleting the entry because we've stopped adding new entries to prevReqTsMap.
+	} else {
+		return 0
 	}
 
 	if reqTs > timestamp {
