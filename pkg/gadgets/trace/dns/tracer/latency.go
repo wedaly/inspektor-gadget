@@ -49,17 +49,18 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 	key := dnsReqKey{daddr, id}
 	reqTs, ok := c.currentReqTsMap[key]
 	if ok {
+		// Found the request in the current map, so delete it to free space.
 		delete(c.currentReqTsMap, key)
 	} else if c.prevReqTsMap != nil {
 		reqTs, ok = c.prevReqTsMap[key]
-		if ok {
-			delete(c.prevReqTsMap, key)
-		} else {
+		if !ok {
+			// Either an invalid ID or we evicted the request from the map to free space.
 			return 0
 		}
+		// Don't bother deleting the key since we never add entries to prevReqTsMap.
 	}
 
-	if timestamp >= reqTs {
+	if timestamp > reqTs {
 		// Should never happen assuming timestamps are monotonic, but handle it just in case.
 		return 0
 	}
