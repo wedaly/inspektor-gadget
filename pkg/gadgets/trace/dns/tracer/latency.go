@@ -45,11 +45,11 @@ func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint
 
 // TODO
 func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id uint64, timestamp uint64) time.Duration {
-	// Lookup the request timestamp.
+	// Lookup the request timestamp so we can subtract it from the response timestamp.
 	key := dnsReqKey{daddr, id}
 	reqTs, ok := c.currentReqTsMap[key]
 	if ok {
-		// Found the request in the current map, so delete it to free space.
+		// Found the request in the current map, so delete the entry to free space.
 		delete(c.currentReqTsMap, key)
 	} else if c.prevReqTsMap != nil {
 		reqTs, ok = c.prevReqTsMap[key]
@@ -57,7 +57,7 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 			// Either an invalid ID or we evicted the request from the map to free space.
 			return 0
 		}
-		// Don't bother deleting the key since we never add entries to prevReqTsMap.
+		// Don't bother deleting the entry because we've stopped adding new entries to prevReqTsMap.
 	}
 
 	if timestamp > reqTs {
