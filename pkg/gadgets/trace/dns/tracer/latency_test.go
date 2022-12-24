@@ -96,23 +96,15 @@ func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
 
 	// Response to most recent request should report latency.
 	latency := c.calculateDnsResponseLatency(addr, lastId, 300)
-	expectedLatency := 200 * time.Nanosecond
-	if latency != expectedLatency {
-		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
-	}
+	assertLatency(t, latency, 200 * time.Nanosecond)
 
 	// Response to first (dropped) requests should NOT report latency.
 	latency = c.calculateDnsResponseLatency(addr, 0, 400)
-	if latency != 0 {
-		t.Fatalf("Expected zero latency but got %d", latency)
-	}
+	assertNoLatency(t, latency)
 
 	// Response to prior request that wasn't yet dropped should report latency.
 	latency = c.calculateDnsResponseLatency(addr, lastId - uint16(dnsLatencyMapSize) - 1, 600)
-	expectedLatency = 500 * time.Nanosecond
-	if latency != expectedLatency {
-		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
-	}
+	assertLatency(t, latency, 500 * time.Nanosecond)
 }
 
 func TestDnsLatencyCalculatorResponseWithZeroTimestamp(t *testing.T) {
@@ -125,8 +117,6 @@ func TestDnsLatencyCalculatorResponseWithZeroTimestamp(t *testing.T) {
 
 	// Response has timestamp zero (should never happen, but check it anyway to prevent overflow).
 	latency := c.calculateDnsResponseLatency(addr, id, 0)
-	if latency != 0 {
-		t.Fatalf("Expected zero latency but got %d", latency)
-	}
+	assertNoLatency(t, latency)
 	assertNumOutstandingRequests(t, c, 0)
 }
