@@ -23,7 +23,12 @@ func TestDnsLatencyCalculatorRequestResponse(t *testing.T) {
 	addr := [16]uint8{1}
 	id := uint16(1)
 	c := newDnsLatencyCalculator()
+
 	c.storeDnsRequestTimestamp(addr, id, 100)
+	if n := c.numOutstandingRequests(); n != 1 {
+		t.Fatalf("Expected one outstanding requests, but got %d", n)
+	}
+
 	latency := c.calculateDnsResponseLatency(addr, id, 500)
 	expectedLatency := 400 * time.Nanosecond
 	if latency != expectedLatency {

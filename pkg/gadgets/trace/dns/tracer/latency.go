@@ -80,6 +80,7 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 	return time.Duration(timestamp - reqTs)
 }
 
+// TODO
 func (c *dnsLatencyCalculator) numOutstandingRequests() int {
 	return len(c.currentReqTsMap) + len(c.prevReqTsMap)
 }
