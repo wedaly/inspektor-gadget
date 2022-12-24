@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	dnsLatencyMapSize         int    = 64
+	dnsLatencyMaxMapSize      int    = 64
 	dnsReqTsMapRotateInterval uint64 = 5_000_000_000 // 5e+9 ns = 5 seconds
 )
 
@@ -37,7 +37,7 @@ type dnsLatencyCalculator struct {
 
 func newDnsLatencyCalculator() *dnsLatencyCalculator {
 	return &dnsLatencyCalculator{
-		currentReqTsMap: make(map[dnsReqKey]uint64, dnsLatencyMapSize),
+		currentReqTsMap: make(map[dnsReqKey]uint64),
 		prevReqTsMap:    nil,
 	}
 }
@@ -45,9 +45,9 @@ func newDnsLatencyCalculator() *dnsLatencyCalculator {
 // TODO
 func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint16, timestamp uint64) {
 	// If the current map is full, drop the previous map and allocate a new one to make space.
-	if len(c.currentReqTsMap) == dnsLatencyMapSize {
+	if len(c.currentReqTsMap) == dnsLatencyMaxMapSize {
 		c.prevReqTsMap = c.currentReqTsMap
-		c.currentReqTsMap = make(map[dnsReqKey]uint64, dnsLatencyMapSize)
+		c.currentReqTsMap = make(map[dnsReqKey]uint64)
 	}
 
 	// Store the timestamp of the request so we can calculate the latency once the response arrives.

@@ -47,7 +47,7 @@ func TestDnsLatencyCalculatorRequestResponse(t *testing.T) {
 	assertNumOutstandingRequests(t, c, 1)
 
 	latency := c.calculateDnsResponseLatency(addr, id, 500)
-	assertLatency(t, latency, 400 * time.Nanosecond)
+	assertLatency(t, latency, 400*time.Nanosecond)
 	assertNumOutstandingRequests(t, c, 0)
 }
 
@@ -74,9 +74,9 @@ func TestDnsLatencyCalculatorResponseWithSameIdButDifferentSrcIP(t *testing.T) {
 
 	// Latency calculated correctly for both responses.
 	firstLatency := c.calculateDnsResponseLatency(firstAddr, id, 500)
-	assertLatency(t, firstLatency, 400 * time.Nanosecond)
+	assertLatency(t, firstLatency, 400*time.Nanosecond)
 	secondLatency := c.calculateDnsResponseLatency(secondAddr, id, 700)
-	assertLatency(t, secondLatency, 500 * time.Nanosecond)
+	assertLatency(t, secondLatency, 500*time.Nanosecond)
 	assertNumOutstandingRequests(t, c, 0)
 }
 
@@ -85,26 +85,26 @@ func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
 	c := newDnsLatencyCalculator()
 
 	var lastId uint16
-	for i := 0; i < dnsLatencyMapSize*3; i++ {
+	for i := 0; i < dnsLatencyMaxMapSize*3; i++ {
 		id := uint16(i)
 		c.storeDnsRequestTimestamp(addr, id, 100)
 		lastId = id
 	}
 
 	// Dropped some of the outstanding requests.
-	assertNumOutstandingRequests(t, c, dnsLatencyMapSize * 2)
+	assertNumOutstandingRequests(t, c, dnsLatencyMaxMapSize*2)
 
 	// Response to most recent request should report latency.
 	latency := c.calculateDnsResponseLatency(addr, lastId, 300)
-	assertLatency(t, latency, 200 * time.Nanosecond)
+	assertLatency(t, latency, 200*time.Nanosecond)
 
 	// Response to first (dropped) requests should NOT report latency.
 	latency = c.calculateDnsResponseLatency(addr, 0, 400)
 	assertNoLatency(t, latency)
 
 	// Response to prior request that wasn't yet dropped should report latency.
-	latency = c.calculateDnsResponseLatency(addr, lastId - uint16(dnsLatencyMapSize) - 1, 600)
-	assertLatency(t, latency, 500 * time.Nanosecond)
+	latency = c.calculateDnsResponseLatency(addr, lastId-uint16(dnsLatencyMaxMapSize)-1, 600)
+	assertLatency(t, latency, 500*time.Nanosecond)
 }
 
 func TestDnsLatencyCalculatorResponseWithZeroTimestamp(t *testing.T) {
