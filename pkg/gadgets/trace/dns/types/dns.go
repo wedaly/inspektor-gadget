@@ -47,6 +47,14 @@ func GetColumns() *columns.Columns[Event] {
 	col, _ := cols.GetColumn("container")
 	col.Visible = false
 
+	cols.MustSetExtractor("latency", func(event *Event) string {
+		if event.Latency > 0 {
+			return event.Latency.String()
+		} else {
+			return "" // Zero latency means none reported (e.g. for requests)
+		}
+	})
+
 	return cols
 }
 
