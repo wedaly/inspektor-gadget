@@ -23,13 +23,16 @@ const (
 	dnsReqTsMapRotateInterval uint64 = 5_000_000_000 // 5e+9 ns = 5 seconds
 )
 
-// TODO
+// dnsReqKey is a unique identifier for a DNS request.
+// The address is the request's source IP address (equals destination address of the response).
+// The ID comes from the DNS header.
 type dnsReqKey struct {
 	addr [16]uint8
 	id   uint16
 }
 
-// TODO
+// dnsLatencyCalculator calculates the latency between a request and its response.
+// It tracks up to dnsLatencyMaxMapSize*2 outstanding requests; if more arrive, older ones will be dropped to make space.
 type dnsLatencyCalculator struct {
 	currentReqTsMap map[dnsReqKey]uint64
 	prevReqTsMap    map[dnsReqKey]uint64
@@ -42,7 +45,7 @@ func newDnsLatencyCalculator() *dnsLatencyCalculator {
 	}
 }
 
-// TODO
+// storeDnsRequestTimestamp stores the timestamp of a DNS request so we can calculate latency once the response arrives.
 func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint16, timestamp uint64) {
 	// If the current map is full, drop the previous map and allocate a new one to make space.
 	if len(c.currentReqTsMap) == dnsLatencyMaxMapSize {
@@ -55,7 +58,8 @@ func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint
 	c.currentReqTsMap[key] = timestamp
 }
 
-// TODO
+// calculateDnsResponseLatency calculates the latency of a DNS response.
+// If there is no corresponding DNS request (either never received or evicted to make space), then this returns zero.
 func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id uint16, timestamp uint64) time.Duration {
 	// Lookup the request timestamp so we can subtract it from the response timestamp.
 	key := dnsReqKey{daddr, id}
@@ -81,7 +85,7 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 	return time.Duration(timestamp - reqTs)
 }
 
-// TODO
+// numOutstandingRequests reports the number of requests that have not received a response.
 func (c *dnsLatencyCalculator) numOutstandingRequests() int {
 	return len(c.currentReqTsMap) + len(c.prevReqTsMap)
 }
