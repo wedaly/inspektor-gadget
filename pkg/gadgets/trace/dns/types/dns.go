@@ -51,7 +51,8 @@ func GetColumns() *columns.Columns[Event] {
 		if event.Latency > 0 {
 			return event.Latency.String()
 		} else {
-			return "" // Zero latency means none reported (e.g. for requests)
+			// latency <= 0 means none reported (e.g. for requests or responses whose request was evicted)
+			return "" 
 		}
 	})
 
