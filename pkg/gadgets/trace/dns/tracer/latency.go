@@ -2,7 +2,9 @@
 
 package tracer
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	dnsLatencyMapSize         int    = 64
@@ -23,8 +25,8 @@ type dnsLatencyCalculator struct {
 
 func newDnsLatencyCalculator() *dnsLatencyCalculator {
 	return &dnsLatencyCalculator{
-		currentReqTsMap:     make(map[dnsReqKey]uint64, dnsLatencyMapSize),
-		prevReqTsMap:        nil,
+		currentReqTsMap: make(map[dnsReqKey]uint64, dnsLatencyMapSize),
+		prevReqTsMap:    nil,
 	}
 }
 
@@ -58,7 +60,7 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 		// Don't bother deleting the entry because we've stopped adding new entries to prevReqTsMap.
 	}
 
-	if timestamp > reqTs {
+	if reqTs > timestamp {
 		// Should never happen assuming timestamps are monotonic, but handle it just in case.
 		return 0
 	}
