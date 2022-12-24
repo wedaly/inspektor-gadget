@@ -26,6 +26,18 @@ func assertNumOutstandingRequests(t *testing.T, c *dnsLatencyCalculator, expecte
 	}
 }
 
+func assertLatency(t *testing.T, actual time.Duration, expected time.Duration) {
+	if actual != expected {
+		t.Fatalf("Expected latency %d but got %d", expected, actual)
+	}
+}
+
+func assertNoLatency(t *testing.T, actual time.Duration) {
+	if actual != 0 {
+		t.Fatalf("Expected no latency returned, but got %d", actual)
+	}
+}
+
 func TestDnsLatencyCalculatorRequestResponse(t *testing.T) {
 	addr := [16]uint8{1}
 	id := uint16(1)
@@ -35,10 +47,7 @@ func TestDnsLatencyCalculatorRequestResponse(t *testing.T) {
 	assertNumOutstandingRequests(t, c, 1)
 
 	latency := c.calculateDnsResponseLatency(addr, id, 500)
-	expectedLatency := 400 * time.Nanosecond
-	if latency != expectedLatency {
-		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
-	}
+	assertLatency(t, latency, 400 * time.Nanosecond)
 	assertNumOutstandingRequests(t, c, 0)
 }
 
@@ -49,9 +58,7 @@ func TestDnsLatencyCalculatorResponseWithoutMatchingRequest(t *testing.T) {
 
 	// Response for an addr/id without a corresponding request.
 	latency := c.calculateDnsResponseLatency(addr, id, 500)
-	if latency != 0 {
-		t.Fatalf("Expected zero latency but got %d", latency)
-	}
+	assertNoLatency(t, latency)
 	assertNumOutstandingRequests(t, c, 0)
 }
 
@@ -66,17 +73,10 @@ func TestDnsLatencyCalculatorResponseWithSameIdButDifferentSrcIP(t *testing.T) {
 	assertNumOutstandingRequests(t, c, 2)
 
 	// Latency calculated correctly for both responses.
-	latency := c.calculateDnsResponseLatency(firstAddr, id, 500)
-	expectedLatency := 400 * time.Nanosecond
-	if latency != expectedLatency {
-		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
-	}
-
-	latency = c.calculateDnsResponseLatency(secondAddr, id, 700)
-	expectedLatency = 500 * time.Nanosecond
-	if latency != expectedLatency {
-		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
-	}
+	firstLatency := c.calculateDnsResponseLatency(firstAddr, id, 500)
+	assertLatency(t, firstLatency, 400 * time.Nanosecond)
+	secondLatency := c.calculateDnsResponseLatency(secondAddr, id, 700)
+	assertLatency(t, secondLatency, 500 * time.Nanosecond)
 	assertNumOutstandingRequests(t, c, 0)
 }
 
