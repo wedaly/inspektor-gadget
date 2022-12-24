@@ -48,7 +48,6 @@ func newDnsLatencyCalculator() *dnsLatencyCalculator {
 	}
 }
 
-// storeDnsRequestTimestamp stores the timestamp of a DNS request so we can calculate latency once the response arrives.
 func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint16, timestamp uint64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -64,7 +63,6 @@ func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint
 	c.currentReqTsMap[key] = timestamp
 }
 
-// calculateDnsResponseLatency calculates the latency of a DNS response.
 // If there is no corresponding DNS request (either never received or evicted to make space), then this returns zero.
 func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id uint16, timestamp uint64) time.Duration {
 	c.mu.Lock()
@@ -94,7 +92,6 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 	return time.Duration(timestamp - reqTs)
 }
 
-// numOutstandingRequests reports the number of requests that have not received a response.
 func (c *dnsLatencyCalculator) numOutstandingRequests() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
