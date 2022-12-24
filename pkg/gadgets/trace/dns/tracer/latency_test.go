@@ -19,24 +19,27 @@ import (
 	"time"
 )
 
+func assertNumOutstandingRequests(t *testing.T, c *dnsLatencyCalculator, expected int) {
+	n := c.numOutstandingRequests()
+	if n != expected {
+		t.Fatalf("Expected %d outstanding requests, but got %d", expected, n)
+	}
+}
+
 func TestDnsLatencyCalculatorRequestResponse(t *testing.T) {
 	addr := [16]uint8{1}
 	id := uint16(1)
 	c := newDnsLatencyCalculator()
 
 	c.storeDnsRequestTimestamp(addr, id, 100)
-	if n := c.numOutstandingRequests(); n != 1 {
-		t.Fatalf("Expected one outstanding requests, but got %d", n)
-	}
+	assertNumOutstandingRequests(t, c, 1)
 
 	latency := c.calculateDnsResponseLatency(addr, id, 500)
 	expectedLatency := 400 * time.Nanosecond
 	if latency != expectedLatency {
 		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
 	}
-	if n := c.numOutstandingRequests(); n != 0 {
-		t.Fatalf("Expected zero outstanding requests, but got %d", n)
-	}
+	assertNumOutstandingRequests(t, c, 0)
 }
 
 func TestDnsLatencyCalculatorResponseWithoutMatchingRequest(t *testing.T) {
@@ -49,9 +52,7 @@ func TestDnsLatencyCalculatorResponseWithoutMatchingRequest(t *testing.T) {
 	if latency != 0 {
 		t.Fatalf("Expected zero latency but got %d", latency)
 	}
-	if n := c.numOutstandingRequests(); n != 0 {
-		t.Fatalf("Expected zero outstanding requests, but got %d", n)
-	}
+	assertNumOutstandingRequests(t, c, 0)
 }
 
 func TestDnsLatencyCalculatorResponseWithSameIdButDifferentSrcIP(t *testing.T) {
@@ -62,9 +63,7 @@ func TestDnsLatencyCalculatorResponseWithSameIdButDifferentSrcIP(t *testing.T) {
 	// Two requests, same ID, different IPs
 	c.storeDnsRequestTimestamp(firstAddr, id, 100)
 	c.storeDnsRequestTimestamp(secondAddr, id, 200)
-	if n := c.numOutstandingRequests(); n != 2 {
-		t.Fatalf("Expected two outstanding requests, but got %d", n)
-	}
+	assertNumOutstandingRequests(t, c, 2)
 
 	// Latency calculated correctly for both responses.
 	latency := c.calculateDnsResponseLatency(firstAddr, id, 500)
@@ -78,9 +77,7 @@ func TestDnsLatencyCalculatorResponseWithSameIdButDifferentSrcIP(t *testing.T) {
 	if latency != expectedLatency {
 		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
 	}
-	if n := c.numOutstandingRequests(); n != 0 {
-		t.Fatalf("Expected zero outstanding requests, but got %d", n)
-	}
+	assertNumOutstandingRequests(t, c, 0)
 }
 
 func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
@@ -94,10 +91,8 @@ func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
 		lastId = id
 	}
 
-	expectedOutstandingReqs := dnsLatencyMapSize * 2 // Dropped one of the outstanding requests.
-	if n := c.numOutstandingRequests(); n != expectedOutstandingReqs {
-		t.Fatalf("Expected %d outstanding requests but got %d", expectedOutstandingReqs, n)
-	}
+	// Dropped some of the outstanding requests.
+	assertNumOutstandingRequests(t, c, dnsLatencyMapSize * 2)
 
 	// Response to most recent request should report latency.
 	latency := c.calculateDnsResponseLatency(addr, lastId, 300)
@@ -126,16 +121,12 @@ func TestDnsLatencyCalculatorResponseWithZeroTimestamp(t *testing.T) {
 	c := newDnsLatencyCalculator()
 
 	c.storeDnsRequestTimestamp(addr, id, 100)
-	if n := c.numOutstandingRequests(); n != 1 {
-		t.Fatalf("Expected one outstanding requests, but got %d", n)
-	}
+	assertNumOutstandingRequests(t, c, 1)
 
 	// Response has timestamp zero (should never happen, but check it anyway to prevent overflow).
 	latency := c.calculateDnsResponseLatency(addr, id, 0)
 	if latency != 0 {
 		t.Fatalf("Expected zero latency but got %d", latency)
 	}
-	if n := c.numOutstandingRequests(); n != 0 {
-		t.Fatalf("Expected zero outstanding requests, but got %d", n)
-	}
+	assertNumOutstandingRequests(t, c, 0)
 }
