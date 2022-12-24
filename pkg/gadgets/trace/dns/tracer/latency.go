@@ -38,7 +38,7 @@ type dnsLatencyCalculator struct {
 func newDnsLatencyCalculator() *dnsLatencyCalculator {
 	return &dnsLatencyCalculator{
 		currentReqTsMap: make(map[dnsReqKey]uint64),
-		prevReqTsMap:    nil,
+		prevReqTsMap:    make(map[dnsReqKey]uint64),
 	}
 }
 
@@ -63,15 +63,14 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 	if ok {
 		// Found the request in the current map, so delete the entry to free space.
 		delete(c.currentReqTsMap, key)
-	} else if c.prevReqTsMap != nil {
+	} else {
 		reqTs, ok = c.prevReqTsMap[key]
-		if !ok {
+		if ok {
+			delete(c.prevReqTsMap, key)
+		} else {
 			// Either an invalid ID or we evicted the request from the map to free space.
 			return 0
 		}
-		// Don't bother deleting the entry because we've stopped adding new entries to prevReqTsMap.
-	} else {
-		return 0
 	}
 
 	if reqTs > timestamp {
