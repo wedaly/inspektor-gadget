@@ -56,6 +56,7 @@ func NewTracer() (*Tracer, error) {
 			return nil, err
 		}
 
+		// Derive latency from the request/response timestamps.
 		if bpfEvent.Qr == 0 {
 			latencyCalc.storeDnsRequestTimestamp(bpfEvent.SaddrV6, bpfEvent.Id, bpfEvent.Timestamp)
 		} else {
