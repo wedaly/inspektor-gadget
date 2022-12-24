@@ -54,6 +54,35 @@ func TestDnsLatencyCalculatorResponseWithoutMatchingRequest(t *testing.T) {
 	}
 }
 
+func TestDnsLatencyCalculatorResponseWithSameIdButDifferentSrcIP(t *testing.T) {
+	firstAddr, secondAddr := [16]uint8{1}, [16]uint8{2}
+	id := uint16(1)
+	c := newDnsLatencyCalculator()
+
+	// Two requests, same ID, different IPs
+	c.storeDnsRequestTimestamp(firstAddr, id, 100)
+	c.storeDnsRequestTimestamp(secondAddr, id, 200)
+	if n := c.numOutstandingRequests(); n != 2 {
+		t.Fatalf("Expected two outstanding requests, but got %d", n)
+	}
+
+	// Latency calculated correctly for both responses.
+	latency := c.calculateDnsResponseLatency(firstAddr, id, 500)
+	expectedLatency := 400 * time.Nanosecond
+	if latency != expectedLatency {
+		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
+	}
+
+	latency = c.calculateDnsResponseLatency(secondAddr, id, 700)
+	expectedLatency = 500 * time.Nanosecond
+	if latency != expectedLatency {
+		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
+	}
+	if n := c.numOutstandingRequests(); n != 0 {
+		t.Fatalf("Expected zero outstanding requests, but got %d", n)
+	}
+}
+
 func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
 	addr := [16]uint8{1}
 	c := newDnsLatencyCalculator()
@@ -81,5 +110,25 @@ func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
 	latency = c.calculateDnsResponseLatency(addr, 0, 400)
 	if latency != 0 {
 		t.Fatalf("Expected zero latency but got %d", latency)
+	}
+}
+
+func TestDnsLatencyCalculatorResponseWithZeroTimestamp(t *testing.T) {
+	addr := [16]uint8{1}
+	id := uint16(1)
+	c := newDnsLatencyCalculator()
+
+	c.storeDnsRequestTimestamp(addr, id, 100)
+	if n := c.numOutstandingRequests(); n != 1 {
+		t.Fatalf("Expected one outstanding requests, but got %d", n)
+	}
+
+	// Response has timestamp zero (should never happen, but check it anyway to prevent overflow).
+	latency := c.calculateDnsResponseLatency(addr, id, 0)
+	if latency != 0 {
+		t.Fatalf("Expected zero latency but got %d", latency)
+	}
+	if n := c.numOutstandingRequests(); n != 0 {
+		t.Fatalf("Expected zero outstanding requests, but got %d", n)
 	}
 }
