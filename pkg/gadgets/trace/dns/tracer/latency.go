@@ -27,7 +27,7 @@ const (
 // The address is the request's source IP address (equals destination address of the response).
 // The ID comes from the DNS header.
 type dnsReqKey struct {
-	addr [16]uint8
+	addr [16]uint8 // Either IPv4 or IPv6.
 	id   uint16
 }
 
