@@ -55,5 +55,31 @@ func TestDnsLatencyCalculatorResponseWithoutMatchingRequest(t *testing.T) {
 }
 
 func TestDnsLatencyCalculatorManyOutstandingRequests(t *testing.T) {
-	//c := newDnsLatencyCalculator()
+	addr := [16]uint8{1}
+	c := newDnsLatencyCalculator()
+
+	var lastId uint16
+	for i := 0; i < dnsLatencyMapSize*3; i++ {
+		id := uint16(i)
+		c.storeDnsRequestTimestamp(addr, id, 100)
+		lastId = id
+	}
+
+	expectedOutstandingReqs := dnsLatencyMapSize * 2 // Dropped one of the outstanding requests.
+	if n := c.numOutstandingRequests(); n != expectedOutstandingReqs {
+		t.Fatalf("Expected %d outstanding requests but got %d", expectedOutstandingReqs, n)
+	}
+
+	// Response to most recent request should report latency.
+	latency := c.calculateDnsResponseLatency(addr, lastId, 300)
+	expectedLatency := 200 * time.Nanosecond
+	if latency != expectedLatency {
+		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
+	}
+
+	// Response to first (dropped) requests should NOT report latency.
+	latency = c.calculateDnsResponseLatency(addr, 0, 400)
+	if latency != 0 {
+		t.Fatalf("Expected zero latency but got %d", latency)
+	}
 }
