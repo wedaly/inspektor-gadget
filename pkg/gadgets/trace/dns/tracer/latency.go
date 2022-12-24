@@ -11,8 +11,8 @@ const (
 
 // TODO
 type dnsReqKey struct {
-	saddr [16]uint8
-	id    uint64
+	addr [16]uint8
+	id   uint64
 }
 
 // TODO
@@ -44,9 +44,9 @@ func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint
 }
 
 // TODO
-func (c *dnsLatencyCalculator) calculateDnsResponseLatency(saddr [16]uint8, id uint64, timestamp uint64) time.Duration {
+func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id uint64, timestamp uint64) time.Duration {
 	// Lookup the request timestamp.
-	key := dnsReqKey{saddr, id}
+	key := dnsReqKey{daddr, id}
 	reqTs, ok := c.currentReqTsMap[key]
 	if ok {
 		delete(c.currentReqTsMap, key)
