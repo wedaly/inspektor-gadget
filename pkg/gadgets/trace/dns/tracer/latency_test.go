@@ -29,4 +29,7 @@ func TestDnsLatencyCalculatorRequestResponse(t *testing.T) {
 	if latency != expectedLatency {
 		t.Fatalf("Expected latency %d but got %d", expectedLatency, latency)
 	}
+	if n := c.numOutstandingRequests(); n != 0 {
+		t.Fatalf("Expected zero outstanding requests, but got %d", n)
+	}
 }
