@@ -15,6 +15,7 @@
 package tracer
 
 import (
+	"sync"
 	"time"
 )
 
@@ -33,7 +34,9 @@ type dnsReqKey struct {
 
 // dnsLatencyCalculator calculates the latency between a request and its response.
 // It tracks up to dnsLatencyMaxMapSize*2 outstanding requests; if more arrive, older ones will be dropped to make space.
+// All operations are thread-safe.
 type dnsLatencyCalculator struct {
+	mu              sync.Mutex // Protects currentReqTsMap and prevReqTsMap.
 	currentReqTsMap map[dnsReqKey]uint64
 	prevReqTsMap    map[dnsReqKey]uint64
 }
@@ -47,6 +50,9 @@ func newDnsLatencyCalculator() *dnsLatencyCalculator {
 
 // storeDnsRequestTimestamp stores the timestamp of a DNS request so we can calculate latency once the response arrives.
 func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint16, timestamp uint64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	// If the current map is full, drop the previous map and allocate a new one to make space.
 	if len(c.currentReqTsMap) == dnsLatencyMaxMapSize {
 		c.prevReqTsMap = c.currentReqTsMap
@@ -61,6 +67,9 @@ func (c *dnsLatencyCalculator) storeDnsRequestTimestamp(saddr [16]uint8, id uint
 // calculateDnsResponseLatency calculates the latency of a DNS response.
 // If there is no corresponding DNS request (either never received or evicted to make space), then this returns zero.
 func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id uint16, timestamp uint64) time.Duration {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	// Lookup the request timestamp so we can subtract it from the response timestamp.
 	key := dnsReqKey{daddr, id}
 	reqTs, ok := c.currentReqTsMap[key]
@@ -87,5 +96,8 @@ func (c *dnsLatencyCalculator) calculateDnsResponseLatency(daddr [16]uint8, id u
 
 // numOutstandingRequests reports the number of requests that have not received a response.
 func (c *dnsLatencyCalculator) numOutstandingRequests() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	return len(c.currentReqTsMap) + len(c.prevReqTsMap)
 }
