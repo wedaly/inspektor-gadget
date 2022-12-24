@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	dnsLatencyMaxMapSize      int    = 64
+	dnsLatencyMaxMapSize      int    = 1024
 	dnsReqTsMapRotateInterval uint64 = 5_000_000_000 // 5e+9 ns = 5 seconds
 )
 

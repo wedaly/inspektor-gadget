@@ -569,6 +569,9 @@ func TestDns(t *testing.T) {
 			normalize := func(e *dnsTypes.Event) {
 				e.Node = ""
 				e.ID = "0000"
+				if e.Latency > 0 {
+					e.Latency = 1
+				}
 			}
 
 			return ExpectEntriesToMatch(output, normalize, expectedEntries...)

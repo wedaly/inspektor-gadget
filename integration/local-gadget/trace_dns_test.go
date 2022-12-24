@@ -93,6 +93,10 @@ func TestTraceDns(t *testing.T) {
 					e.Container = "test-pod"
 				}
 				e.ID = ""
+
+				if e.Latency > 0 {
+					e.Latency = 1
+				}
 			}
 
 			return ExpectEntriesToMatch(output, normalize, expectedEntries...)
