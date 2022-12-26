@@ -138,9 +138,9 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 			bpf_printk("DEBUG rdlength = %d", rdlength);
 
 			if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN && rdlength == 4) {
-				bpf_skb_load_bytes(skb, ans_offset + name_len + 11, &(event.first_addr_v4), rdlength);
+				bpf_skb_load_bytes(skb, ans_offset + 12, &(event.first_addr_v4), rdlength);
 			} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN && rdlength == 16) {
-				bpf_skb_load_bytes(skb, ans_offset + name_len + 11, &(event.first_addr_v6), rdlength);
+				bpf_skb_load_bytes(skb, ans_offset + 12, &(event.first_addr_v6), rdlength);
 			} else {
 				bpf_printk("DEBUG didn't load address %d...");
 			}
