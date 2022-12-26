@@ -126,19 +126,19 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 	if (ancount > 0) {
 		event.ancount = ancount;
 
-		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + 4; // TODO: can we assume name_len is the same?
-		__u16 rrtype = load_half(skb, ans_offset + name_len);
-		__u16 rrclass = load_half(skb, ans_offset + name_len + 2);
-		__u16 rdlength = load_half(skb, ans_offset + name_len + 8);
+		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + 5; // TODO: can we assume name_len is the same?
+		__u16 rrtype = load_half(skb, ans_offset + name_len + 1);
+		__u16 rrclass = load_half(skb, ans_offset + name_len + 3);
+		__u16 rdlength = load_half(skb, ans_offset + name_len + 9);
 
 		bpf_printk("DEBUG rrtype = %d", rrtype);
 		bpf_printk("DEBUG rrclass = %d", rrclass);
 		bpf_printk("DEBUG rdlength = %d", rdlength);
 
 		if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN && rdlength == 4) {
-			bpf_skb_load_bytes(skb, ans_offset + name_len + 10, &(event.first_addr_v4), rdlength);
+			bpf_skb_load_bytes(skb, ans_offset + name_len + 11, &(event.first_addr_v4), rdlength);
 		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN && rdlength == 8) {
-			bpf_skb_load_bytes(skb, ans_offset + name_len + 10, &(event.first_addr_v6), rdlength);
+			bpf_skb_load_bytes(skb, ans_offset + name_len + 11, &(event.first_addr_v6), rdlength);
 		} else {
 			bpf_printk("DEBUG didn't load address %d...");
 		}
