@@ -76,6 +76,17 @@ struct dnshdr {
 	__u16 arcount; // number of additional records
 };
 
+// DNS resource record
+// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.3
+struct dnsrr {
+	__u16 name; // Two octets when using message compression, see https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
+	__u16 type;
+	__u16 class;
+	__u32 ttl;
+	__u16 rdlength;
+	// Followed by rdata
+};
+
 static __u32 dns_name_length(struct __sk_buff *skb) {
 	// This loop iterates over the DNS labels to find the total DNS name length.
 	unsigned int i;
@@ -126,12 +137,14 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 	if (ancount > 0) {
 		event.ancount = ancount;
 
-		// TODO: explain about compression...
 		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + 5;
-		if ((load_byte(skb, ans_offset) & 0xF0) == 0xC0) {
-			__u16 rrtype = load_half(skb, ans_offset + 2);
-			__u16 rrclass = load_half(skb, ans_offset + 4);
-			__u16 rdlength = load_half(skb, ans_offset + 10);
+		__u16 rrname = load_byte(skb, ans_offset + offsetof(struct dnsrr, name));
+
+		// Check that the name is compressed (first two bits 0b11), in which case it occupies two octets.
+		if ((rrname & 0xF0) == 0xC0) {
+			__u16 rrtype = load_half(skb, ans_offset + offsetof(struct dnsrr, type));
+			__u16 rrclass = load_half(skb, ans_offset + offsetof(struct dnsrr, class));
+			__u16 rdlength = load_half(skb, ans_offset + offsetof(struct dnsrr, rdlength));
 
 			bpf_printk("DEBUG rrtype = %d", rrtype);
 			bpf_printk("DEBUG rrclass = %d", rrclass);
