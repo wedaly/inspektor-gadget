@@ -15,9 +15,10 @@
 
 #define DNS_OFF (ETH_HLEN + sizeof(struct iphdr) + sizeof(struct udphdr))
 
-#define DNS_TYPE_A 1
-#define DNS_TYPE_AAAA 28
-#define DNS_CLASS_IN 
+const int DNS_CLASS_IN = 1;   // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.4
+
+const int DNS_TYPE_A = 1;     // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.2
+const int DNS_TYPE_AAAA = 28; // https://www.rfc-editor.org/rfc/rfc3596#section-2.1
 
 /* llvm builtin functions that eBPF C program may use to
  * emit BPF_LD_ABS and BPF_LD_IND instructions
@@ -149,9 +150,10 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 		__u16 rrclass = load_half(skb, ans_offset + offsetof(struct dnsrr, class);
 
 		if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN) {
-		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN) {
-		}
 
+		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN) {
+
+		}
 	}
 
 	return event;
