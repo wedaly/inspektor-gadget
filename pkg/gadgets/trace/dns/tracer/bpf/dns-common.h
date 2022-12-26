@@ -25,6 +25,15 @@ struct event_t {
 	unsigned char rcode;
 
 	__u8 name[MAX_DNS_NAME];
+
+	// number of answers in a response.
+	__u16 ancount;
+
+	// first address from A or AAAA answers.
+	union {
+		__u8 first_addr_v6[16];
+		__u32 first_addr_v4;
+	};
 };
 
 #endif
