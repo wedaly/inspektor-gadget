@@ -15,6 +15,8 @@
 package types
 
 import (
+	"strconv"
+
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/columns"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 )
@@ -45,6 +47,14 @@ func GetColumns() *columns.Columns[Event] {
 
 	col, _ := cols.GetColumn("container")
 	col.Visible = false
+
+	cols.MustSetExtractor("numanswers", func(e *Event) string {
+		if e.Qr != DNSPktTypeResponse {
+			// Show answers only for responses.
+			return ""
+		}
+		return strconv.Itoa(e.NumAnswers)
+	})
 
 	return cols
 }
