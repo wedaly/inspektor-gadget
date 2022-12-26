@@ -140,7 +140,7 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 
 	// Read QTYPE right after the QNAME
 	// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
-	event.qtype = load_half(skb, DNS_OFF + sizeof(struct dnshdr) + name_len + 1);
+	event.qtype = load_half(skb, DNS_OFF + sizeof(struct dnshdr) + name_len + offsetof(struct dnsq, qtype));
 
 	if (ancount > 0) {
 		event.ancount = ancount;
