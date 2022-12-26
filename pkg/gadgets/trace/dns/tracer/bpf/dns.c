@@ -82,10 +82,10 @@ struct dnsq {
 	__u16 qname;
 	__u16 qtype;
 	__u16 qclass;
-}
+};
 
 // DNS resource record
-// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.3 
+// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.3
 struct dnsrr {
 	__u16 name;
 	__u16 type;
@@ -93,7 +93,7 @@ struct dnsrr {
 	__u16 ttl;
 	__u16 rdlength;
 	// followed by rdata (rdlength bytes)
-}
+};
 
 static __u32 dns_name_length(struct __sk_buff *skb) {
 	// This loop iterates over the DNS labels to find the total DNS name length.
@@ -142,7 +142,7 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 	// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
 	event.qtype = load_half(skb, DNS_OFF + sizeof(struct dnshdr) + name_len + 1);
 
-	if ancount > 0 {
+	if (ancount > 0) {
 		event.ancount = ancount;
 
 		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + sizeof(dnsq));
