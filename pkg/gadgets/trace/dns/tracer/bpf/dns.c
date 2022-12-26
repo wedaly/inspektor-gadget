@@ -131,16 +131,16 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 		__u16 rrclass = load_half(skb, ans_offset + name_len + 2);
 		__u16 rdlength = load_half(skb, ans_offset + name_len + 8);
 
-		bpf_trace_printk("DEBUG rrtype = %d", rrtype);
-		bpf_trace_printk("DEBUG rrclass = %d", rrclass);
-		bpf_trace_printk("DEBUG rdlength = %d", rdlength);
+		bpf_printk("DEBUG rrtype = %d", rrtype);
+		bpf_printk("DEBUG rrclass = %d", rrclass);
+		bpf_printk("DEBUG rdlength = %d", rdlength);
 
 		if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN && rdlength == 4) {
 			bpf_skb_load_bytes(skb, ans_offset + name_len + 10, &(event.first_addr_v4), rdlength);
 		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN && rdlength == 8) {
 			bpf_skb_load_bytes(skb, ans_offset + name_len + 10, &(event.first_addr_v6), rdlength);
 		} else {
-			bpf_trace_printk("DEBUG didn't load address...")
+			bpf_printk("DEBUG didn't load address %d...");
 		}
 	}
 
