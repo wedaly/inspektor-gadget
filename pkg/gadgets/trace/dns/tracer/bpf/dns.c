@@ -126,7 +126,7 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 	if (ancount > 0) {
 		event.ancount = ancount;
 
-		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + 4;
+		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + 4; // TODO: can we assume name_len is the same?
 		__u16 rrtype = load_half(skb, ans_offset + name_len);
 		__u16 rrclass = load_half(skb, ans_offset + name_len + 2);
 		__u16 rdlength = load_half(skb, ans_offset + name_len + 8);
