@@ -256,7 +256,7 @@ func parseDNSEvent(rawSample []byte) (*types.Event, error) {
 	}
 
 	event.NumAnswers = int(bpfEvent.Ancount)
-	if bpfEvent.Ancount > 0 {
+	if bpfEvent.Ancount > 0 && bpfEvent.FirstAddrV6 != [16]uint8{0} {
 		if bpfEvent.Qtype == qTypeARecord {
 			event.FirstAnswer = gadgets.IPStringFromBytes(bpfEvent.FirstAddrV6, 4)
 		} else if bpfEvent.Qtype == qTypeAAAARecord {
