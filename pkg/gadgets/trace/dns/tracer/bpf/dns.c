@@ -78,6 +78,7 @@ struct dnshdr {
 
 // DNS resource record
 // https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.3
+#pragma pack(2)
 struct dnsrr {
 	__u16 name; // Two octets when using message compression, see https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 	__u16 type;
@@ -146,9 +147,9 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 			__u16 rrclass = load_half(skb, ans_offset + offsetof(struct dnsrr, class));
 			__u16 rdlength = load_half(skb, ans_offset + offsetof(struct dnsrr, rdlength));
 
-			bpf_printk("DEBUG rrtype = %d", rrtype);
-			bpf_printk("DEBUG rrclass = %d", rrclass);
-			bpf_printk("DEBUG rdlength = %d", rdlength);
+			bpf_printk("DEBUG rrtype = %d at offset %d", rrtype, offsetof(struct dnsrr, class));
+			bpf_printk("DEBUG rrclass = %d at offset %d", rrclass, offsetof(struct dnsrr, class));
+			bpf_printk("DEBUG rdlength = %d at offset %d", rdlength, offsetof(struct dnsrr, rdlength));
 
 			if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN && rdlength == 4) {
 				bpf_skb_load_bytes(skb, ans_offset + sizeof(struct dnsrr), &(event.first_addr_v4), rdlength);
