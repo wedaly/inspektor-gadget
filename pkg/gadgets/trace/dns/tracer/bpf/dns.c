@@ -150,9 +150,9 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 		__u16 rrclass = load_half(skb, ans_offset + offsetof(struct dnsrr, class));
 
 		if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN) {
-			bpf_skb_load_bytes(skb, ans_offset + sizeof(dnsrr), event.first_addr_v4, 4);
+			bpf_skb_load_bytes(skb, ans_offset + sizeof(struct dnsrr), event.first_addr_v4, 4);
 		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN) {
-			bpf_skb_load_bytes(skb, ans_offset + sizeof(dnsrr), event.first_addr_v6, 8);
+			bpf_skb_load_bytes(skb, ans_offset + sizeof(struct dnsrr), event.first_addr_v6, 8);
 		}
 	}
 
