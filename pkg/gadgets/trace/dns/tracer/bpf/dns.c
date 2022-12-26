@@ -133,7 +133,7 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 
 		if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN && rdlength == 4) {
 			bpf_skb_load_bytes(skb, ans_offset + name_len + 10, &(event.first_addr_v4), rdlength);
-		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN && rdlength = 8) {
+		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN && rdlength == 8) {
 			bpf_skb_load_bytes(skb, ans_offset + name_len + 10, &(event.first_addr_v6), rdlength);
 		}
 	}
