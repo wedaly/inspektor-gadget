@@ -76,25 +76,6 @@ struct dnshdr {
 	__u16 arcount; // number of additional records
 };
 
-// DNS question
-// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
-struct dnsq {
-	__u16 qname;
-	__u16 qtype;
-	__u16 qclass;
-};
-
-// DNS resource record
-// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.3
-struct dnsrr {
-	__u16 name;
-	__u16 type;
-	__u16 class;
-	__u16 ttl;
-	__u16 rdlength;
-	// followed by rdata (rdlength bytes)
-};
-
 static __u32 dns_name_length(struct __sk_buff *skb) {
 	// This loop iterates over the DNS labels to find the total DNS name length.
 	unsigned int i;
@@ -140,19 +121,20 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 
 	// Read QTYPE right after the QNAME
 	// https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
-	event.qtype = load_half(skb, DNS_OFF + sizeof(struct dnshdr) + name_len + offsetof(struct dnsq, qtype));
+	event.qtype = load_half(skb, DNS_OFF + sizeof(struct dnshdr) + name_len + 1);
 
 	if (ancount > 0) {
 		event.ancount = ancount;
 
-		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + sizeof(struct dnsq);
-		__u16 rrtype = load_half(skb, ans_offset + offsetof(struct dnsrr, type));
-		__u16 rrclass = load_half(skb, ans_offset + offsetof(struct dnsrr, class));
+		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + 4;
+		__u16 rrtype = load_half(skb, ans_offset + name_len);
+		__u16 rrclass = load_half(skb, ans_offset + name_len + 2);
+		__u16 rdlength = load_half(skb, ans_offset + name_len + 8);
 
-		if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN) {
-			bpf_skb_load_bytes(skb, ans_offset + sizeof(struct dnsrr), &(event.first_addr_v4), 4);
-		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN) {
-			bpf_skb_load_bytes(skb, ans_offset + sizeof(struct dnsrr), &(event.first_addr_v6), 8);
+		if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN && rdlength == 4) {
+			bpf_skb_load_bytes(skb, ans_offset + name_len + 10, &(event.first_addr_v4), rdlength);
+		} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN && rdlength = 8) {
+			bpf_skb_load_bytes(skb, ans_offset + name_len + 10, &(event.first_addr_v6), rdlength);
 		}
 	}
 
