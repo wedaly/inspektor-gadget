@@ -147,16 +147,12 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 			__u16 rrclass = load_half(skb, ans_offset + offsetof(struct dnsrr, class));
 			__u16 rdlength = load_half(skb, ans_offset + offsetof(struct dnsrr, rdlength));
 
-			bpf_printk("DEBUG rrtype = %d at offset %d", rrtype, offsetof(struct dnsrr, class));
-			bpf_printk("DEBUG rrclass = %d at offset %d", rrclass, offsetof(struct dnsrr, class));
-			bpf_printk("DEBUG rdlength = %d at offset %d", rdlength, offsetof(struct dnsrr, rdlength));
-
 			if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN && rdlength == 4) {
+				// A record contains an IPv4 address.
 				bpf_skb_load_bytes(skb, ans_offset + sizeof(struct dnsrr), &(event.first_addr_v4), rdlength);
 			} else if (rrtype == DNS_TYPE_AAAA && rrclass == DNS_CLASS_IN && rdlength == 16) {
+				// AAAA record contains an IPv6 address.
 				bpf_skb_load_bytes(skb, ans_offset + sizeof(struct dnsrr), &(event.first_addr_v6), rdlength);
-			} else {
-				bpf_printk("DEBUG didn't load address %d...");
 			}
 		}
 	}

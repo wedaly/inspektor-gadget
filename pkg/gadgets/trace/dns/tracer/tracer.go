@@ -163,6 +163,11 @@ var qTypeNames = map[uint]string{
 	32769: "DLV",
 }
 
+const (
+	qTypeARecord    = 1
+	qTypeAAAARecord = 28
+)
+
 const MaxDNSName = int(unsafe.Sizeof(dnsEventT{}.Name))
 
 // DNS header RCODE (response code) field.
@@ -252,11 +257,9 @@ func parseDNSEvent(rawSample []byte) (*types.Event, error) {
 
 	event.NumAnswers = int(bpfEvent.Ancount)
 	if bpfEvent.Ancount > 0 {
-		fmt.Printf("!!! DEBUG !!! addr = %v\n", bpfEvent.FirstAddrV6)
-		// TODO: constify
-		if bpfEvent.Qtype == 1 {
+		if bpfEvent.Qtype == qTypeARecord {
 			event.FirstAnswer = gadgets.IPStringFromBytes(bpfEvent.FirstAddrV6, 4)
-		} else if bpfEvent.Qtype == 28 {
+		} else if bpfEvent.Qtype == qTypeAAAARecord {
 			event.FirstAnswer = gadgets.IPStringFromBytes(bpfEvent.FirstAddrV6, 6)
 		}
 	}
