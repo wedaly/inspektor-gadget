@@ -145,9 +145,9 @@ static struct event_t build_event(struct __sk_buff *skb, union dnsflags flags, _
 	if (ancount > 0) {
 		event.ancount = ancount;
 
-		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + sizeof(dnsq));
-		__u16 rrtype = load_half(skb, ans_offset + offsetof(struct dnsrr, type);
-		__u16 rrclass = load_half(skb, ans_offset + offsetof(struct dnsrr, class);
+		int ans_offset = DNS_OFF + sizeof(struct dnshdr) + name_len + sizeof(struct dnsq));
+		__u16 rrtype = load_half(skb, ans_offset + offsetof(struct dnsrr, type));
+		__u16 rrclass = load_half(skb, ans_offset + offsetof(struct dnsrr, class));
 
 		if (rrtype == DNS_TYPE_A && rrclass == DNS_CLASS_IN) {
 			bpf_skb_load_bytes(skb, ans_offset + sizeof(dnsrr), event.first_addr_v4, 4);
