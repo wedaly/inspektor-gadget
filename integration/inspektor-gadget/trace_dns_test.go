@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"testing"
 
 	tracednsTypes "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/dns/types"
@@ -53,6 +54,8 @@ func TestTraceDns(t *testing.T) {
 					QType:      "A",
 					Rcode:      "NoError",
 					Latency:    1,
+					NumAnswers: 1,
+					Addresses:  []string{"169.254.0.1"},
 				},
 				{
 					Event:      BuildBaseEvent(ns),
@@ -73,6 +76,7 @@ func TestTraceDns(t *testing.T) {
 					QType:      "AAAA",
 					Rcode:      "NoError",
 					Latency:    1,
+					NumAnswers: 0, // inspektor-gadget.io currently IPv4 only.
 				},
 			}
 
@@ -89,6 +93,14 @@ func TestTraceDns(t *testing.T) {
 				// Latency should be > 0 only for DNS responses.
 				if e.Latency > 0 {
 					e.Latency = 1
+				}
+
+				// Avoid depending on the exact IP address in the reply.
+				if e.NumAnswers > 0 {
+					e.NumAnswers = 1
+				}
+				if len(e.Addresses) > 0 && net.ParseIP(e.Addresses[0]) != nil {
+					e.Addresses = []string{"169.254.0.1"}
 				}
 			}
 

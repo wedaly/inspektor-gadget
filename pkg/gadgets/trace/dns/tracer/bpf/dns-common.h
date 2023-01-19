@@ -5,6 +5,11 @@
 // https://datatracker.ietf.org/doc/html/rfc1034#section-3.1
 #define MAX_DNS_NAME 255
 
+// Maximum number of A or AAAA answers to include in the DNS event.
+// The DNS reply could have more answers than this, but the additional
+// answers won't be sent to userspace.
+#define MAX_ADDR_ANSWERS 4
+
 struct event_t {
 	__u64 timestamp;
 	union {
@@ -26,6 +31,10 @@ struct event_t {
 	unsigned char rcode;
 
 	__u8 name[MAX_DNS_NAME];
+
+	__u16 ancount;
+	__u16 anaddrcount;
+	__u8 anaddr[MAX_ADDR_ANSWERS][16]; // Either IPv4-mapped-IPv6 (A record) or IPv6 (AAAA record) addresses.
 };
 
 #endif
