@@ -69,8 +69,25 @@ func newAttachment(
 		}
 	}()
 
-	a.collection, err = ebpf.NewCollection(spec)
+	/*
+		a.collection, err = ebpf.NewCollection(spec)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create BPF collection: %w", err)
+		}
+	*/
+	opts := ebpf.CollectionOptions{
+		Programs: ebpf.ProgramOptions{
+			LogSize: 1024 * 1024,
+		},
+	}
+	a.collection, err = ebpf.NewCollectionWithOptions(spec, opts)
 	if err != nil {
+		var verr *ebpf.VerifierError
+		if errors.As(err, &verr) {
+			fmt.Printf("DEBUG!!!! verr = %-v\n", verr)
+			fmt.Printf("DEBUG!!!! verr.Cause(w) = %w\n", verr.Cause)
+			fmt.Printf("DEBUG!!!! verr.Cause(v) = %v\n", verr.Cause)
+		}
 		return nil, fmt.Errorf("failed to create BPF collection: %w", err)
 	}
 
