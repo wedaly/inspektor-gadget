@@ -26,7 +26,7 @@ type dnsEventT struct {
 	Name        [255]uint8
 	Ancount     uint16
 	Anaddrcount uint16
-	Anaddr      [4][16]uint8
+	Anaddr      [1][16]uint8
 	_           [2]byte
 }
 
