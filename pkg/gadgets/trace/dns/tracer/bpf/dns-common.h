@@ -10,7 +10,7 @@
 // answers won't be sent to userspace.
 // TODO: setting this higher than 1 causes verification errors with clang 11,
 // but passes with clang 15.0.7. Why?
-#define MAX_ADDR_ANSWERS 1
+#define MAX_ADDR_ANSWERS 4
 
 struct event_t {
 	__u64 timestamp;
