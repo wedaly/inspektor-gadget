@@ -115,5 +115,6 @@ func _ProcessCollectorClose(closers ...io.Closer) error {
 }
 
 // Do not access this directly.
+//
 //go:embed processcollector_bpfel.o
 var _ProcessCollectorBytes []byte

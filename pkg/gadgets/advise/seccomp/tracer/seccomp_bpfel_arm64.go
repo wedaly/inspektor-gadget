@@ -115,5 +115,6 @@ func _SeccompClose(closers ...io.Closer) error {
 }
 
 // Do not access this directly.
+//
 //go:embed seccomp_bpfel_arm64.o
 var _SeccompBytes []byte

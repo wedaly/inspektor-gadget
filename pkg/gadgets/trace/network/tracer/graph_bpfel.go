@@ -124,5 +124,6 @@ func _GraphClose(closers ...io.Closer) error {
 }
 
 // Do not access this directly.
+//
 //go:embed graph_bpfel.o
 var _GraphBytes []byte

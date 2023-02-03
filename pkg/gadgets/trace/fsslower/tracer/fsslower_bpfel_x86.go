@@ -155,5 +155,6 @@ func _FsslowerClose(closers ...io.Closer) error {
 }
 
 // Do not access this directly.
+//
 //go:embed fsslower_bpfel_x86.o
 var _FsslowerBytes []byte

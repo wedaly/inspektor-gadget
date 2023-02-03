@@ -162,5 +162,6 @@ func _TcpconnectClose(closers ...io.Closer) error {
 }
 
 // Do not access this directly.
+//
 //go:embed tcpconnect_bpfel_x86.o
 var _TcpconnectBytes []byte
