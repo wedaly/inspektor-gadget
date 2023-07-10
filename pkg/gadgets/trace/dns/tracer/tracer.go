@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/netip"
 	"syscall"
+	"time"
 	"unsafe"
 
 	gadgetcontext "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-context"
@@ -251,6 +252,8 @@ func bpfEventToDNSEvent(bpfEvent *dnsEventT, netns uint64) (*types.Event, error)
 		if !ok {
 			event.Rcode = "UNKNOWN"
 		}
+
+		event.Latency = time.Duration(bpfEvent.LatencyNS)
 	}
 
 	// There's a limit on the number of addresses in the BPF event,
