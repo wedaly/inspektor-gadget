@@ -47,6 +47,8 @@ struct event_t {
 	__u16 ancount;
 	__u16 anaddrcount;
 	__u8 anaddr[MAX_ADDR_ANSWERS][16]; // Either IPv4-mapped-IPv6 (A record) or IPv6 (AAAA record) addresses.
+
+	__u64 latency_ns; // Set only for answers, not queries.
 };
 
 #endif

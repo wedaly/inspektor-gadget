@@ -35,6 +35,7 @@ type dnsEventT struct {
 	Anaddrcount uint16
 	Anaddr      [8][16]uint8
 	_           [4]byte
+	LatencyNs   uint64
 }
 
 type dnsSocketsKey struct {
