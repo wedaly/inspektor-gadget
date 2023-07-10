@@ -94,11 +94,15 @@ struct query_key_t {
 	__u16 id;
 };
 
+struct query_ts_t {
+	__u64 timestamp;
+};
+
 // TODO: explain
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
 	__type(key, struct query_key_t);
-	__type(value, __u64); // Timestamp of the query.
+	__type(value, struct query_ts_t);
 	__uint(max_entries, 1024);
 } queries_map SEC(".maps");
 
@@ -221,15 +225,19 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 	// Latency calculation.
 	struct query_key_t query_key = {.mount_ns_id = event->mount_ns_id, .id = event->id};
 	if (!event->qr) {
+		struct query_ts_t query_ts = {.timestamp = event->timestamp};
 		// Store query timestamp in a map so we can calculate latency on receipt of the response.
-		if (!bpf_map_update_elem(&queries_map, &query_key, &event->timestamp, BPF_NOEXIST)) {
+		if (!bpf_map_update_elem(&queries_map, &query_key, &query_ts, BPF_NOEXIST)) {
 			return 1;
 		}
 	} else {
 		// Retrieve query timestamp and calculate latency.
-		__u64 *query_ts = bpf_map_lookup_elem(&queries_map, &query_key);
+		// TODO: check something about the query/response type too? remember that from the old impl
+		struct query_ts_t *query_ts = bpf_map_lookup_elem(&queries_map, &query_key);
 		if (query_ts != NULL) {
-			event->latency_ns = event->timestamp - (*query_ts);
+			if (query_ts->timestamp < event->timestamp) {
+				event->latency_ns = event->timestamp - query_ts->timestamp;
+			}
 			bpf_map_delete_elem(&queries_map, &query_key);
 		}
 	}

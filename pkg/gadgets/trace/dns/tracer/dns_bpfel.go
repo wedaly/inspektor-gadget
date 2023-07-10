@@ -45,6 +45,8 @@ type dnsQueryKeyT struct {
 	Id        uint16
 }
 
+type dnsQueryTsT struct{ Timestamp uint64 }
+
 type dnsSocketsKey struct {
 	Netns  uint32
 	Family uint16
