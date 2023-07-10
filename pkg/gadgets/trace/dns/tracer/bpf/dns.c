@@ -98,7 +98,7 @@ struct query_key_t {
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
 	__type(key, struct query_key_t);
-	__type(value, __u64);
+	__type(value, __u64); // Timestamp of the query.
 	__uint(max_entries, 1024);
 } queries_map SEC(".maps");
 
@@ -217,6 +217,22 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 	int anoffset = DNS_OFF + sizeof(struct dnshdr) + name_len + 5;
 	int anaddrcount = load_addresses(skb, ancount, anoffset, event);
 	event->anaddrcount = anaddrcount;
+
+	// Latency calculation.
+	struct query_key_t query_key = {.mount_ns_id = event->mount_ns_id, .id = event->id};
+	if (!event->qr) {
+		// Store query timestamp in a map so we can calculate latency on receipt of the response.
+		if (!bpf_map_update_elem(&queries_map, &query_key, &event->timestamp, BPF_NOEXIST)) {
+			return 1;
+		}
+	} else {
+		// Retrieve query timestamp and calculate latency.
+		__u64 *query_ts = bpf_map_lookup_elem(&queries_map, &query_key);
+		if (query_ts != NULL) {
+			event->latency_ns = event->timestamp - (*query_ts);
+			bpf_map_delete_elem(&queries_map, &query_key);
+		}
+	}
 
 	// size of full structure - addresses + only used addresses
 	unsigned long long size = sizeof(*event) - MAX_ADDR_ANSWERS*16 + anaddrcount*16;
