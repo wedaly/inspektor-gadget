@@ -30,12 +30,14 @@ type dnsEventT struct {
 	Qr          uint8
 	PktType     uint8
 	Rcode       uint8
+	_           [7]byte
+	LatencyNs   uint64
 	Name        [255]uint8
+	_           [1]byte
 	Ancount     uint16
 	Anaddrcount uint16
 	Anaddr      [8][16]uint8
 	_           [4]byte
-	LatencyNs   uint64
 }
 
 type dnsQueryKeyT struct {
