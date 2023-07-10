@@ -253,7 +253,7 @@ func bpfEventToDNSEvent(bpfEvent *dnsEventT, netns uint64) (*types.Event, error)
 			event.Rcode = "UNKNOWN"
 		}
 
-		event.Latency = time.Duration(bpfEvent.LatencyNS)
+		event.Latency = time.Duration(bpfEvent.LatencyNs)
 	}
 
 	// There's a limit on the number of addresses in the BPF event,
