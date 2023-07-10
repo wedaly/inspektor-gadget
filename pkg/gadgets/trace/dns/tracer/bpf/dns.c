@@ -223,15 +223,13 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 	event->anaddrcount = anaddrcount;
 
 	// Latency calculation.
+        // Filter by packet type (OUTGOING for queries and HOST for responses) to exclude cases where
+        // the packet is forwarded between containers in the host netns.
 	struct query_key_t query_key = {.mount_ns_id = event->mount_ns_id, .id = event->id};
-	if (!event->qr) {
+	if (event->qr == 0 && event->pkt_type == 0x4) { // query with type PACKET_OUTGOING
 		struct query_ts_t query_ts = {.timestamp = event->timestamp};
-		// Store query timestamp in a map so we can calculate latency on receipt of the response.
-		// TODO: why does this error out?
 		bpf_map_update_elem(&queries_map, &query_key, &query_ts, BPF_NOEXIST);
-	} else {
-		// Retrieve query timestamp and calculate latency.
-		// TODO: check something about the query/response type too? remember that from the old impl
+	} else if (event->qr == 1 && event->pkt_type == 0x0) { // response with type PACKET_HOST
 		struct query_ts_t *query_ts = bpf_map_lookup_elem(&queries_map, &query_key);
 		if (query_ts != NULL) {
 			if (query_ts->timestamp < event->timestamp) {
