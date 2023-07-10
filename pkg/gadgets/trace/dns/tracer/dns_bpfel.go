@@ -38,6 +38,11 @@ type dnsEventT struct {
 	LatencyNs   uint64
 }
 
+type dnsQueryKeyT struct {
+	MountNsId uint64
+	Id        uint16
+}
+
 type dnsSocketsKey struct {
 	Netns  uint32
 	Family uint16
@@ -105,9 +110,10 @@ type dnsProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type dnsMapSpecs struct {
-	Events   *ebpf.MapSpec `ebpf:"events"`
-	Sockets  *ebpf.MapSpec `ebpf:"sockets"`
-	TmpEvent *ebpf.MapSpec `ebpf:"tmp_event"`
+	Events     *ebpf.MapSpec `ebpf:"events"`
+	QueriesMap *ebpf.MapSpec `ebpf:"queries_map"`
+	Sockets    *ebpf.MapSpec `ebpf:"sockets"`
+	TmpEvent   *ebpf.MapSpec `ebpf:"tmp_event"`
 }
 
 // dnsObjects contains all objects after they have been loaded into the kernel.
@@ -129,14 +135,16 @@ func (o *dnsObjects) Close() error {
 //
 // It can be passed to loadDnsObjects or ebpf.CollectionSpec.LoadAndAssign.
 type dnsMaps struct {
-	Events   *ebpf.Map `ebpf:"events"`
-	Sockets  *ebpf.Map `ebpf:"sockets"`
-	TmpEvent *ebpf.Map `ebpf:"tmp_event"`
+	Events     *ebpf.Map `ebpf:"events"`
+	QueriesMap *ebpf.Map `ebpf:"queries_map"`
+	Sockets    *ebpf.Map `ebpf:"sockets"`
+	TmpEvent   *ebpf.Map `ebpf:"tmp_event"`
 }
 
 func (m *dnsMaps) Close() error {
 	return _DnsClose(
 		m.Events,
+		m.QueriesMap,
 		m.Sockets,
 		m.TmpEvent,
 	)

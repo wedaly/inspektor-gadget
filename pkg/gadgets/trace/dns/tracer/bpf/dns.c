@@ -88,6 +88,20 @@ struct {
 	__type(value, struct event_t);
 } tmp_event SEC(".maps");
 
+// TODO: explain
+struct query_key_t {
+	__u64 mount_ns_id;
+	__u16 id;
+};
+
+// TODO: explain
+struct {
+	__uint(type, BPF_MAP_TYPE_HASH);
+	__type(key, struct query_key_t);
+	__type(value, __u64);
+	__uint(max_entries, 1024);
+} queries_map SEC(".maps");
+
 static __always_inline __u32 dns_name_length(struct __sk_buff *skb)
 {
 	// This loop iterates over the DNS labels to find the total DNS name
