@@ -227,9 +227,8 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 	if (!event->qr) {
 		struct query_ts_t query_ts = {.timestamp = event->timestamp};
 		// Store query timestamp in a map so we can calculate latency on receipt of the response.
-		if (!bpf_map_update_elem(&queries_map, &query_key, &query_ts, BPF_NOEXIST)) {
-			return 1;
-		}
+		// TODO: why does this error out?
+		bpf_map_update_elem(&queries_map, &query_key, &query_ts, BPF_NOEXIST);
 	} else {
 		// Retrieve query timestamp and calculate latency.
 		// TODO: check something about the query/response type too? remember that from the old impl
