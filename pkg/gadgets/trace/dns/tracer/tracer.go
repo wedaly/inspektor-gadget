@@ -23,8 +23,6 @@ import (
 	"syscall"
 	"unsafe"
 
-	"golang.org/x/sys/unix"
-
 	gadgetcontext "github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-context"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/internal/networktracer"
@@ -290,12 +288,7 @@ func (t *Tracer) install() error {
 		return fmt.Errorf("loading asset: %w", err)
 	}
 
-	latencyCalc, err := newDNSLatencyCalculator()
-	if err != nil {
-		return err
-	}
-
-	parseAndEnrichDNSEvent := func(rawSample []byte, netns uint64) (*types.Event, error) {
+	parseDNSEvent := func(rawSample []byte, netns uint64) (*types.Event, error) {
 		bpfEvent := (*dnsEventT)(unsafe.Pointer(&rawSample[0]))
 		// TODO: Why do I need 4+?
 		expected := 4 + int(unsafe.Sizeof(*bpfEvent)) - MaxAddrAnswers*16 + int(bpfEvent.Anaddrcount)*16
@@ -309,15 +302,6 @@ func (t *Tracer) install() error {
 			return nil, err
 		}
 
-		// Derive latency from the query/response timestamps.
-		// Filter by packet type (OUTGOING for queries and HOST for responses) to exclude cases where
-		// the packet is forwarded between containers in the host netns.
-		if bpfEvent.Qr == 0 && bpfEvent.PktType == unix.PACKET_OUTGOING {
-			latencyCalc.storeDNSQueryTimestamp(netns, bpfEvent.Id, uint64(event.Event.Timestamp))
-		} else if bpfEvent.Qr == 1 && bpfEvent.PktType == unix.PACKET_HOST {
-			event.Latency = latencyCalc.calculateDNSResponseLatency(netns, bpfEvent.Id, uint64(event.Event.Timestamp))
-		}
-
 		return event, nil
 	}
 
@@ -326,7 +310,7 @@ func (t *Tracer) install() error {
 		BPFProgName,
 		BPFPerfMapName,
 		types.Base,
-		parseAndEnrichDNSEvent,
+		parseDNSEvent,
 	)
 	if err != nil {
 		return fmt.Errorf("creating network tracer: %w", err)
