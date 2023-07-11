@@ -88,7 +88,7 @@ struct {
 	__type(value, struct event_t);
 } tmp_event SEC(".maps");
 
-// TODO: explain
+// Map of DNS query (mntNs, id) to timestamp so we can calculate latency from query to answer.
 struct query_key_t {
 	__u64 mount_ns_id;
 	__u16 id;
@@ -98,7 +98,6 @@ struct query_ts_t {
 	__u64 timestamp;
 };
 
-// TODO: explain
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
 	__type(key, struct query_key_t);
@@ -222,9 +221,17 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 	int anaddrcount = load_addresses(skb, ancount, anoffset, event);
 	event->anaddrcount = anaddrcount;
 
-	// Latency calculation.
-        // Filter by packet type (OUTGOING for queries and HOST for responses) to exclude cases where
-        // the packet is forwarded between containers in the host netns.
+	// Calculate latency:
+	// * On DNS query sent from a container namespace (mount_ns_id != 0, qr == 0, and pkt_type == OUTGOING),
+	//   store the query timestamp in a map.
+	// * On DNS response received in the same container namespace (mount_ns_id != 0, qr == 1, and pkt_type == HOST)
+	//   retrieve/delete the query timestamp and set the latency field on the event.
+	//
+	// We filter by mount_ns_id and pkt_type to handle cases where the same DNS ID is processed multiple times
+	// in the same namespace (e.g. coredns both receives and forwards a query).
+	//
+	// A garbage collection thread running in userspace periodically scans for keys with old timestamps
+	// to free space occupied by queries that never receive a response.
 	if (event->mount_ns_id) {
 		struct query_key_t query_key = {.mount_ns_id = event->mount_ns_id, .id = event->id};
 		if (event->qr == 0 && event->pkt_type == 0x4) { // query with type PACKET_OUTGOING
