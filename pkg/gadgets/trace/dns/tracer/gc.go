@@ -95,7 +95,7 @@ func (gc *garbageCollector) collect() {
 	}
 
 	for _, key := range keysToDelete {
-		log.Infof("Deleting key with mntNs=%d and DNS ID=%s from query map for DNS tracer", key.MountNsId, key.Id)
+		log.Infof("Deleting key with mntNs=%d and DNS ID=%d from query map for DNS tracer", key.MountNsId, key.Id)
 		err := gc.queryMap.Delete(key)
 		if err != nil {
 			log.Errorf("Could not delete DNS query timestamp with key mntNs=%d and DNS ID=%d", key.MountNsId, key.Id)
