@@ -43,6 +43,7 @@ func newGarbageCollector(queryMap *ebpf.Map) *garbageCollector {
 
 func (gc *garbageCollector) start() {
 	if gc.started {
+		log.Warn("Cannot start DNS queries map garbage collector because it is already running")
 		return
 	}
 
@@ -54,6 +55,7 @@ func (gc *garbageCollector) start() {
 
 func (gc *garbageCollector) stop() {
 	if !gc.started {
+		log.Warn("Cannot stop DNS queries map garbage collector because it isn't running")
 		return
 	}
 
