@@ -322,7 +322,7 @@ func (t *Tracer) install() error {
 	}
 	t.Tracer = networkTracer
 
-	t.gc = newGarbageCollector(t.Tracer.GetMap("query_map"))
+	t.gc = newGarbageCollector(t.Tracer.GetMap("queries_map"))
 	t.gc.start()
 
 	return nil
