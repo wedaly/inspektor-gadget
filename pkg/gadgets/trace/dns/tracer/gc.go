@@ -25,6 +25,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Delay between each garbage collection run.
+const garbageCollectorInterval = 5 * time.Second
+
 // garbageCollector runs a background goroutine to delete old query timestamps
 // from the DNS queries_map. This ensures that queries that never receive a response
 // are deleted from the map.
@@ -68,7 +71,7 @@ func (gc *garbageCollector) runLoop() {
 		default:
 			log.Debugf("Executing DNS query map garbage collection")
 			gc.collect()
-			time.Sleep(5 * time.Second) // TODO: make configurable...
+			time.Sleep(garbageCollectorInterval)
 		}
 	}
 }
@@ -84,7 +87,8 @@ func (gc *garbageCollector) collect() {
 
 	// If the BPF program is deleting keys from the map during iteration,
 	// we may see duplicate keys or stop without processing some keys (ErrIterationAborted).
-	// This is okay since we'll process the map again on the next garbage collection run.
+	// Duplicate keys are okay since we handle ErrKeyNotExists on delete,
+	// and ErrIterationAborted is okay because we'll retry on the next garbage collection.
 	for iter.Next(&key, &val) {
 		ts := gadgets.WallTimeFromBootTime(val.Timestamp)
 		if ts < cutoffTs {
