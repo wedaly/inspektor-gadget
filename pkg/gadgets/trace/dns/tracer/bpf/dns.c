@@ -225,17 +225,19 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 	// Latency calculation.
         // Filter by packet type (OUTGOING for queries and HOST for responses) to exclude cases where
         // the packet is forwarded between containers in the host netns.
-	struct query_key_t query_key = {.mount_ns_id = event->mount_ns_id, .id = event->id};
-	if (event->qr == 0 && event->pkt_type == 0x4) { // query with type PACKET_OUTGOING
-		struct query_ts_t query_ts = {.timestamp = event->timestamp};
-		bpf_map_update_elem(&queries_map, &query_key, &query_ts, BPF_NOEXIST);
-	} else if (event->qr == 1 && event->pkt_type == 0x0) { // response with type PACKET_HOST
-		struct query_ts_t *query_ts = bpf_map_lookup_elem(&queries_map, &query_key);
-		if (query_ts != NULL) {
-			if (query_ts->timestamp < event->timestamp) {
-				event->latency_ns = event->timestamp - query_ts->timestamp;
+	if (event->mount_ns_id) {
+		struct query_key_t query_key = {.mount_ns_id = event->mount_ns_id, .id = event->id};
+		if (event->qr == 0 && event->pkt_type == 0x4) { // query with type PACKET_OUTGOING
+			struct query_ts_t query_ts = {.timestamp = event->timestamp};
+			bpf_map_update_elem(&queries_map, &query_key, &query_ts, BPF_NOEXIST);
+		} else if (event->qr == 1 && event->pkt_type == 0x0) { // response with type PACKET_HOST
+			struct query_ts_t *query_ts = bpf_map_lookup_elem(&queries_map, &query_key);
+			if (query_ts != NULL) {
+				if (query_ts->timestamp < event->timestamp) {
+					event->latency_ns = event->timestamp - query_ts->timestamp;
+				}
+				bpf_map_delete_elem(&queries_map, &query_key);
 			}
-			bpf_map_delete_elem(&queries_map, &query_key);
 		}
 	}
 
