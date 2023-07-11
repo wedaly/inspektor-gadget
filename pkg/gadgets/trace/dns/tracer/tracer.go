@@ -42,6 +42,8 @@ const (
 type Tracer struct {
 	*networktracer.Tracer[types.Event]
 
+	gc *garbageCollector
+
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -319,6 +321,10 @@ func (t *Tracer) install() error {
 		return fmt.Errorf("creating network tracer: %w", err)
 	}
 	t.Tracer = networkTracer
+
+	t.gc = newGarbageCollector(t.Tracer.GetMap("query_map"))
+	t.gc.start()
+
 	return nil
 }
 
@@ -334,5 +340,9 @@ func (t *Tracer) Close() {
 
 	if t.Tracer != nil {
 		t.Tracer.Close()
+	}
+
+	if t.gc != nil {
+		t.gc.stop()
 	}
 }
