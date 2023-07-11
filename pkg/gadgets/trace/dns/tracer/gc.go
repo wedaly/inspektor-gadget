@@ -22,6 +22,7 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/types"
+	log "github.com/sirupsen/logrus"
 )
 
 type garbageCollector struct {
@@ -39,6 +40,7 @@ func (gc *garbageCollector) start() {
 		return
 	}
 
+	log.Infof("Starting garbage collection for DNS tracer")
 	gc.doneChan = make(chan struct{}, 0)
 	go gc.runLoop()
 	gc.started = true
@@ -49,6 +51,7 @@ func (gc *garbageCollector) stop() {
 		return
 	}
 
+	log.Infof("Stopping garbage collection for DNS tracer")
 	close(gc.doneChan)
 	gc.started = false
 }
@@ -60,6 +63,7 @@ func (gc *garbageCollector) runLoop() {
 			return
 
 		default:
+			log.Debug("Executing DNS query map garbage collection")
 			gc.collect()
 			time.Sleep(5 * time.Second) // TODO: make configurable...
 		}
@@ -82,12 +86,19 @@ func (gc *garbageCollector) collect() {
 		}
 	}
 
-	// TODO: check iter error
+	if err := iter.Err(); err != nil {
+		if err == ebpf.ErrIterationAborted {
+			log.Debug("Received ErrIterationAborted when iterating through DNS query map, possibly due to concurrent deletes. Some entries may be skipped this garbage collection cycle.")
+		} else {
+			log.Errorf("Received err %s when iterating through DNS query map", err)
+		}
+	}
 
 	for _, key := range keysToDelete {
+		log.Debugf("Deleting key with mntNs=%d and DNS ID=%s from query map for DNS tracer", key.MountNsId, key.Id)
 		err := gc.queryMap.Delete(key)
 		if err != nil {
-			panic(err) // TODO
+			log.Errorf("Could not delete DNS query timestamp with key mntNs=%d and DNS ID=%d", key.MountNsId, key.Id)
 		}
 	}
 }
