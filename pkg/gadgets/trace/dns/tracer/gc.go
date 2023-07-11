@@ -63,7 +63,7 @@ func (gc *garbageCollector) runLoop() {
 			return
 
 		default:
-			log.Debug("Executing DNS query map garbage collection")
+			log.Infof("Executing DNS query map garbage collection")
 			gc.collect()
 			time.Sleep(5 * time.Second) // TODO: make configurable...
 		}
@@ -88,14 +88,14 @@ func (gc *garbageCollector) collect() {
 
 	if err := iter.Err(); err != nil {
 		if err == ebpf.ErrIterationAborted {
-			log.Debug("Received ErrIterationAborted when iterating through DNS query map, possibly due to concurrent deletes. Some entries may be skipped this garbage collection cycle.")
+			log.Warnf("Received ErrIterationAborted when iterating through DNS query map, possibly due to concurrent deletes. Some entries may be skipped this garbage collection cycle.")
 		} else {
 			log.Errorf("Received err %s when iterating through DNS query map", err)
 		}
 	}
 
 	for _, key := range keysToDelete {
-		log.Debugf("Deleting key with mntNs=%d and DNS ID=%s from query map for DNS tracer", key.MountNsId, key.Id)
+		log.Infof("Deleting key with mntNs=%d and DNS ID=%s from query map for DNS tracer", key.MountNsId, key.Id)
 		err := gc.queryMap.Delete(key)
 		if err != nil {
 			log.Errorf("Could not delete DNS query timestamp with key mntNs=%d and DNS ID=%d", key.MountNsId, key.Id)
