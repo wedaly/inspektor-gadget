@@ -25,6 +25,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// garbageCollector runs a background goroutine to delete old query timestamps
+// from the DNS queries_map. This ensures that queries that never receive a response
+// are deleted from the map.
 type garbageCollector struct {
 	started  bool
 	doneChan chan struct{}
@@ -63,7 +66,7 @@ func (gc *garbageCollector) runLoop() {
 			return
 
 		default:
-			log.Infof("Executing DNS query map garbage collection")
+			log.Debugf("Executing DNS query map garbage collection")
 			gc.collect()
 			time.Sleep(5 * time.Second) // TODO: make configurable...
 		}
@@ -78,7 +81,10 @@ func (gc *garbageCollector) collect() {
 	)
 	cutoffTs := types.Time(time.Now().Add(-10 * time.Second).UnixNano())
 	iter := gc.queryMap.Iterate()
-	// TODO: comment about this possibly getting aborted or repeating keys if concurrent deletes...
+
+	// If the BPF program is deleting keys from the map during iteration,
+	// we may see duplicate keys or stop without processing some keys (ErrIterationAborted).
+	// This is okay since we'll process the map again on the next garbage collection run.
 	for iter.Next(&key, &val) {
 		ts := gadgets.WallTimeFromBootTime(val.Timestamp)
 		if ts < cutoffTs {
@@ -95,10 +101,16 @@ func (gc *garbageCollector) collect() {
 	}
 
 	for _, key := range keysToDelete {
-		log.Infof("Deleting key with mntNs=%d and DNS ID=%x from query map for DNS tracer", key.MountNsId, key.Id)
+		log.Debugf("Deleting key with mntNs=%d and DNS ID=%x from query map for DNS tracer", key.MountNsId, key.Id)
 		err := gc.queryMap.Delete(key)
 		if err != nil {
-			log.Errorf("Could not delete DNS query timestamp with key mntNs=%d and DNS ID=%x", key.MountNsId, key.Id)
+			if err == ebpf.ErrKeyNotExist {
+				// Could happen if the BPF program deleted the key, or if the map iter returned a duplicate key
+				// due to concurrent write operations.
+				log.Debugf("ErrKeyNotExist when trying to delete DNS query timestamp with key mntNs=%d and DNS ID=%x", key.MountNsId, key.Id)
+			} else {
+				log.Errorf("Could not delete DNS query timestamp with key mntNs=%d and DNS ID=%x, err: %s", key.MountNsId, key.Id, err)
+			}
 		}
 	}
 }
