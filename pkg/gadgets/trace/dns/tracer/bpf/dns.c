@@ -103,7 +103,7 @@ struct {
 	__type(key, struct query_key_t);
 	__type(value, struct query_ts_t);
 	__uint(max_entries, 1024);
-} queries_map SEC(".maps");
+} query_map SEC(".maps");
 
 static __always_inline __u32 dns_name_length(struct __sk_buff *skb)
 {
@@ -224,7 +224,7 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 	// Calculate latency:
 	//
 	// Filter by mount_ns_id and pkt_type to track the latency from when a query is sent from a container
-	// and when a response is received by that same container.
+	// and when a response to the query is received by that same container.
 	//
 	// * On DNS query sent from a container namespace (mount_ns_id != 0, qr == 0, and pkt_type == OUTGOING),
 	//   store the query timestamp in a map.
@@ -238,14 +238,14 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 		struct query_key_t query_key = {.mount_ns_id = event->mount_ns_id, .id = event->id};
 		if (event->qr == 0 && event->pkt_type == 0x4) { // query with type PACKET_OUTGOING
 			struct query_ts_t query_ts = {.timestamp = event->timestamp};
-			bpf_map_update_elem(&queries_map, &query_key, &query_ts, BPF_NOEXIST);
+			bpf_map_update_elem(&query_map, &query_key, &query_ts, BPF_NOEXIST);
 		} else if (event->qr == 1 && event->pkt_type == 0x0) { // response with type PACKET_HOST
-			struct query_ts_t *query_ts = bpf_map_lookup_elem(&queries_map, &query_key);
+			struct query_ts_t *query_ts = bpf_map_lookup_elem(&query_map, &query_key);
 			if (query_ts != NULL) {
 				if (query_ts->timestamp < event->timestamp) {
 					event->latency_ns = event->timestamp - query_ts->timestamp;
 				}
-				bpf_map_delete_elem(&queries_map, &query_key);
+				bpf_map_delete_elem(&query_map, &query_key);
 			}
 		}
 	}
