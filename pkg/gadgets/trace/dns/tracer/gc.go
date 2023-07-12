@@ -26,7 +26,10 @@ import (
 )
 
 // Delay between each garbage collection run.
-const garbageCollectorInterval = 5 * time.Second
+const garbageCollectorInterval = 1 * time.Second
+
+// Max age of query before it will be garbage collected.
+const garbageCollectorMaxQueryAge = 10 * time.Second
 
 // garbageCollector runs a background goroutine to delete old query timestamps
 // from the DNS queries_map. This ensures that queries that never receive a response
@@ -84,7 +87,7 @@ func (gc *garbageCollector) collect() {
 		val          dnsQueryTsT
 		keysToDelete []dnsQueryKeyT
 	)
-	cutoffTs := types.Time(time.Now().Add(-10 * time.Second).UnixNano())
+	cutoffTs := types.Time(time.Now().Add(-1 * garbageCollectorMaxQueryAge).UnixNano())
 	iter := gc.queryMap.Iterate()
 
 	// If the BPF program is deleting keys from the map during iteration,
