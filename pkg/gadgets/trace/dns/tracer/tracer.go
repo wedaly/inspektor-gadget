@@ -34,10 +34,10 @@ import (
 //go:generate bash -c "source ../../../internal/networktracer/clangosflags.sh; go run github.com/cilium/ebpf/cmd/bpf2go -target bpfel -cc clang -type event_t dns ./bpf/dns.c -- $CLANG_OS_FLAGS -I./bpf/ -I../../../internal/socketenricher/bpf"
 
 const (
-	BPFProgName       = "ig_trace_dns"
-	BPFPerfMapName    = "events"
+	BPFProgName     = "ig_trace_dns"
+	BPFPerfMapName  = "events"
 	BPFQueryMapName = "query_map"
-	MaxAddrAnswers    = 8 // Keep aligned with MAX_ADDR_ANSWERS in bpf/dns-common.h
+	MaxAddrAnswers  = 8 // Keep aligned with MAX_ADDR_ANSWERS in bpf/dns-common.h
 )
 
 type Tracer struct {
@@ -325,7 +325,11 @@ func (t *Tracer) install() error {
 
 	// Start a background thread to garbage collect queries without responses
 	// from the queries map (used to calculate DNS latency).
-	t.gc = newGarbageCollector(t.Tracer.GetMap(BPFQueryMapName))
+	queryMap := t.Tracer.GetMap(BPFQueryMapName)
+	if queryMap == nil {
+		return nil, fmt.Errorf("Could not retrieve DNS query map")
+	}
+	t.gc = newGarbageCollector(queryMap)
 	t.gc.start()
 
 	return nil
