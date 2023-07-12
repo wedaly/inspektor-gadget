@@ -222,13 +222,15 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 	event->anaddrcount = anaddrcount;
 
 	// Calculate latency:
+	//
+	// Filter by mount_ns_id and pkt_type to track the latency from when a query is sent from a container
+	// and when a response is received by that same container.
+	//
 	// * On DNS query sent from a container namespace (mount_ns_id != 0, qr == 0, and pkt_type == OUTGOING),
 	//   store the query timestamp in a map.
+	//
 	// * On DNS response received in the same container namespace (mount_ns_id != 0, qr == 1, and pkt_type == HOST)
 	//   retrieve/delete the query timestamp and set the latency field on the event.
-	//
-	// We filter by mount_ns_id and pkt_type to handle cases where the same DNS ID is processed multiple times
-	// in the same namespace (e.g. coredns both receives and forwards a query).
 	//
 	// A garbage collection thread running in userspace periodically scans for keys with old timestamps
 	// to free space occupied by queries that never receive a response.
