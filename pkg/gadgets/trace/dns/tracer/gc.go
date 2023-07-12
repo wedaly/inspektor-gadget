@@ -32,7 +32,7 @@ const garbageCollectorInterval = 1 * time.Second
 const garbageCollectorMaxQueryAge = 10 * time.Second
 
 // garbageCollector runs a background goroutine to delete old query timestamps
-// from the DNS queries_map. This ensures that queries that never receive a response
+// from the DNS query_map. This ensures that queries that never receive a response
 // are deleted from the map.
 type garbageCollector struct {
 	started  bool

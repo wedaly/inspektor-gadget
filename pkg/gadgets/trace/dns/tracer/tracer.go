@@ -36,7 +36,7 @@ import (
 const (
 	BPFProgName       = "ig_trace_dns"
 	BPFPerfMapName    = "events"
-	BPFQueriesMapName = "queries_map"
+	BPFQueryMapName = "query_map"
 	MaxAddrAnswers    = 8 // Keep aligned with MAX_ADDR_ANSWERS in bpf/dns-common.h
 )
 
@@ -325,7 +325,7 @@ func (t *Tracer) install() error {
 
 	// Start a background thread to garbage collect queries without responses
 	// from the queries map (used to calculate DNS latency).
-	t.gc = newGarbageCollector(t.Tracer.GetMap(BPFQueriesMapName))
+	t.gc = newGarbageCollector(t.Tracer.GetMap(BPFQueryMapName))
 	t.gc.start()
 
 	return nil
