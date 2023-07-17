@@ -55,7 +55,7 @@ func startGarbageCollector(ctx context.Context, logger logger.Logger, gadgetPara
 		// Allocate the keys/values arrays once and reuse for each iteration.
 		var (
 			keysBatch   [garbageCollectorBatchSize]dnsQueryKeyT
-			valuesBatch [garbageCollectorBatchSize]dnsQueryTsT
+			valuesBatch [garbageCollectorBatchSize]uint64
 		)
 
 		ticker := time.NewTicker(garbageCollectorInterval)
@@ -80,7 +80,7 @@ func startGarbageCollector(ctx context.Context, logger logger.Logger, gadgetPara
 	}()
 }
 
-func collectGarbage(dnsTimeout time.Duration, queryMap *ebpf.Map, keysBatch []dnsQueryKeyT, valuesBatch []dnsQueryTsT) (int, error) {
+func collectGarbage(dnsTimeout time.Duration, queryMap *ebpf.Map, keysBatch []dnsQueryKeyT, valuesBatch []uint64) (int, error) {
 	var (
 		keysToDelete []dnsQueryKeyT
 		prevKeyOut   interface{}
@@ -100,7 +100,7 @@ func collectGarbage(dnsTimeout time.Duration, queryMap *ebpf.Map, keysBatch []dn
 
 		cutoffTs := types.Time(time.Now().Add(-1 * dnsTimeout).UnixNano())
 		for i := 0; i < n; i++ {
-			ts := gadgets.WallTimeFromBootTime(valuesBatch[i].Timestamp)
+			ts := gadgets.WallTimeFromBootTime(valuesBatch[i])
 			if ts < cutoffTs {
 				keysToDelete = append(keysToDelete, keysBatch[i])
 			}

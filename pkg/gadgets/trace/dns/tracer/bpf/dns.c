@@ -105,14 +105,10 @@ struct query_key_t {
 	__u16 id;
 };
 
-struct query_ts_t {
-	__u64 timestamp;
-};
-
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
 	__type(key, struct query_key_t);
-	__type(value, struct query_ts_t);
+	__type(value, __u64);
 	__uint(max_entries, 1024);
 } query_map SEC(".maps");
 
@@ -255,14 +251,13 @@ output_dns_event(struct __sk_buff *skb, union dnsflags flags, __u32 name_len, __
 			.id = event->id,
 		};
 		if (event->qr == DNS_QR_QUERY && event->pkt_type == PACKET_OUTGOING) {
-			struct query_ts_t query_ts = {.timestamp = event->timestamp};
-			bpf_map_update_elem(&query_map, &query_key, &query_ts, BPF_NOEXIST);
+			bpf_map_update_elem(&query_map, &query_key, &event->timestamp, BPF_NOEXIST);
 		} else if (event->qr == DNS_QR_RESP && event->pkt_type == PACKET_HOST) {
-			struct query_ts_t *query_ts = bpf_map_lookup_elem(&query_map, &query_key);
+			__u64 *query_ts = bpf_map_lookup_elem(&query_map, &query_key);
 			if (query_ts != NULL) {
 				// query ts should always be less than the event ts, but check anyway to be safe.
-				if (query_ts->timestamp < event->timestamp) {
-					event->latency_ns = event->timestamp - query_ts->timestamp;
+				if (*query_ts < event->timestamp) {
+					event->latency_ns = event->timestamp - *query_ts;
 				}
 				bpf_map_delete_elem(&query_map, &query_key);
 			}
